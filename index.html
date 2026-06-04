@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jungle Bingo Complete</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+body{font-family:Arial,sans-serif;background:#111;color:#fff;margin:0;padding:20px}
+.tabs{display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap}
+button,input{padding:10px;border-radius:8px;border:none}
+.panel{display:none}.panel.active{display:block}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}
+.bingo-board{position:relative;width:min(90vw,600px);aspect-ratio:1/1;margin:auto;background:url('https://i.postimg.cc/cHXMXPfN/bingo-template.png') center/contain no-repeat}
+.team-overlay{position:absolute;top:2%;width:100%;text-align:center;font-size:28px;font-weight:bold}
+.grid{position:absolute;top:10.5%;left:10.5%;width:79%;height:79%;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr)}
+.cell{position:relative;cursor:pointer}
+.cell.checked::before,.cell.checked::after{content:"";position:absolute;top:50%;left:50%;width:85%;height:14px;background:rgba(0,255,80,.35);border-radius:999px}
+.cell.checked::before{transform:translate(-50%,-50%) rotate(45deg)}
+.cell.checked::after{transform:translate(-50%,-50%) rotate(-45deg)}
+.card-item{background:#222;padding:10px;margin:8px 0;border-radius:8px;display:flex;justify-content:space-between}
+</style>
+</head>
+<body>
+<div class="tabs">
+<button onclick="showTab('public')">Overzicht</button>
+<button onclick="showTab('editor')">Editor</button>
+<button onclick="showTab('saved')">Beheer</button>
+</div>
+
+<div id="public" class="panel active"><h2>Teams</h2><div id="publicCards"></div></div>
+
+<div id="editor" class="panel">
+<div class="controls">
+<input id="teamName" placeholder="Teamnaam" oninput="updateTeam()">
+<button onclick="saveCard()">Opslaan</button>
+<button onclick="newCard()">Nieuwe kaart</button>
+<button onclick="takeScreenshot()">Screenshot</button>
+<button onclick="exportData()">Export backup</button>
+</div>
+<div id="capture">
+<div class="bingo-board">
+<div id="teamOverlay" class="team-overlay"></div>
+<div id="grid" class="grid"></div>
+</div>
+</div>
+</div>
+
+<div id="saved" class="panel"><h2>Beheer</h2><div id="savedCards"></div></div>
+
+<script>
+const PASSWORD="1337"; let unlocked=false;
+function unlock(){ if(unlocked) return true; let p=prompt("Code"); if(p==="1337"){unlocked=true; return true;} alert("Fout"); return false;}
+function showTab(id){ if(id==="saved"&&!unlock()) return; document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.getElementById(id).classList.add('active'); loadSaved(); loadPublic();}
+for(let i=0;i<16;i++){let c=document.createElement('div');c.className='cell';c.onclick=()=>{if(!unlock())return;c.classList.toggle('checked')};grid.appendChild(c);}
+function updateTeam(){teamOverlay.innerText=teamName.value;}
+function saveCard(){let t=teamName.value.trim(); if(!t)return; let checked=[]; document.querySelectorAll('.cell').forEach((c,i)=>{if(c.classList.contains('checked'))checked.push(i)}); localStorage.setItem('bingo_'+t,JSON.stringify({team:t,checked})); loadSaved(); loadPublic();}
+function newCard(){teamName.value='';updateTeam();document.querySelectorAll('.cell').forEach(c=>c.classList.remove('checked'));}
+function loadSaved(){let d=savedCards; d.innerHTML=''; Object.keys(localStorage).filter(k=>k.startsWith('bingo_')).forEach(k=>{let x=JSON.parse(localStorage[k]); d.innerHTML+=`<div class="card-item"><span>${x.team}</span><span><button onclick="editCard('${x.team}')">Bewerk</button><button onclick="deleteCard('${x.team}')">Verwijder</button></span></div>`})}
+function loadPublic(){let d=publicCards; d.innerHTML=''; Object.keys(localStorage).filter(k=>k.startsWith('bingo_')).forEach(k=>{let x=JSON.parse(localStorage[k]); d.innerHTML+=`<div class="card-item">${x.team}</div>`})}
+function editCard(t){if(!unlock())return; let x=JSON.parse(localStorage.getItem('bingo_'+t)); showTab('editor'); newCard(); teamName.value=x.team; updateTeam(); x.checked.forEach(i=>document.querySelectorAll('.cell')[i].classList.add('checked'));}
+function deleteCard(t){if(!unlock())return; localStorage.removeItem('bingo_'+t); loadSaved(); loadPublic();}
+function takeScreenshot(){html2canvas(document.getElementById('capture')).then(c=>{let img=c.toDataURL(); localStorage.setItem('screenshot_'+(teamName.value||'team'),img); let a=document.createElement('a'); a.href=img; a.download=(teamName.value||'team')+'.png'; a.click();});}
+function exportData(){let data={}; for(let i=0;i<localStorage.length;i++){let k=localStorage.key(i); data[k]=localStorage.getItem(k);} let b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); let a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='backup.json'; a.click();}
+loadPublic();
+</script>
+</body></html>
