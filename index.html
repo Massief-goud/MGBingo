@@ -15,8 +15,7 @@ body{
  padding:10px;
  overflow-x:hidden;
 }
-.tabs{display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap}
-button{padding:10px 14px;border:none;border-radius:8px;cursor:pointer;background:rgba(68, 68, 68, 0.9);color:white;font-weight:bold}
+.tabs{display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap}button{padding:10px 14px;border:none;border-radius:8px;cursor:pointer;background:rgba(68, 68, 68, 0.9);color:white;font-weight:bold}
 button:hover{background:rgba(85, 85, 85, 0.9)}
 .btn-save{background:rgba(0, 188, 212, 0.9);color:black}
 .btn-screenshot{background:rgba(76, 175, 80, 0.9);color:white}
@@ -116,14 +115,25 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
  background:none;border:none;cursor:pointer;font-weight:bold;
 }
 .modal-close:hover { color:#ff9800; }
+.tabs-bar {
+ display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;gap:10px;flex-wrap:wrap;
+}
+.tabs { display:flex;gap:8px;flex-wrap:wrap; margin:0; }
+.logo {
+ height:60px;width:auto;object-fit:contain;flex-shrink:0;
+ filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+}
 </style>
 </head>
 <body>
 
+<div class="tabs-bar">
 <div class="tabs">
 <button onclick="showTab('public')">Overzicht Kaarten</button>
 <button onclick="showTab('editor')">Bingo Kaart Editor</button>
 <button onclick="showTab('saved')">Opgeslagen Kaarten (Staff)</button>
+</div>
+<img src="https://i.postimg.cc/qBXLqNFT/imagemgbingo-logo.jpg" class="logo" alt="MG Bingo Logo">
 </div>
 
 <div id="public" class="panel active">
