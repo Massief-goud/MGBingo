@@ -186,6 +186,9 @@ function unlockEdit(){
 }
 
 function showTab(id){
+ if(id === 'editor' || id === 'saved'){
+   if(!unlockEdit()) return;
+ }
  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
  document.getElementById(id).classList.add('active');
  if(id === 'saved') loadSavedCards();
