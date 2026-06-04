@@ -25,10 +25,14 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
 .panel.active{display:block}
 .controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}
 
-/* Bingo Kaart */
+/* Bingo Kaart - Mobielvriendelijk gemaakt */
 .bingo-board{
- position:relative;width:min(90vw,600px);aspect-ratio:1/1;margin:0 auto;
- background:url('https://i.postimg.cc/cHXMXPfN/bingo-template.png') center/contain no-repeat;
+ position:relative;
+ width: 100%;
+ max-width: 550px;
+ aspect-ratio: 1 / 1;
+ margin: 0 auto;
+ background: url('https://i.postimg.cc/cHXMXPfN/bingo-template.png') center/contain no-repeat;
 }
 .team-overlay {
  position:absolute;top:2.5%;left:0;width:100%;
@@ -40,13 +44,28 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
  position:absolute;top:10.5%;left:10.5%;width:79%;height:79%;
  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
 }
-.cell{position:relative;cursor:pointer}
+
+/* Cellen een minimale breedte/hoogte gegeven zodat ze op mobiel niet inklappen */
+.cell{
+ position:relative;
+ cursor:pointer;
+ width: 100%;
+ height: 100%;
+}
+
 .cell.checked::before,.cell.checked::after{
  content:"";position:absolute;top:50%;left:50%;
- width:85%;height:14px;background:rgba(0,255,80,.35);border-radius:999px;
+ width:85%;height:12px;background:rgba(0,255,80,.4);border-radius:999px;
 }
 .cell.checked::before{transform:translate(-50%,-50%) rotate(45deg)}
 .cell.checked::after{transform:translate(-50%,-50%) rotate(-45deg)}
+
+/* Schaal de dikte van het kruisje op kleine schermen zodat het netjes blijft */
+@media (max-width: 480px) {
+  .cell.checked::before, .cell.checked::after {
+    height: 6px;
+  }
+}
 
 /* Overzichtskaarten */
 .public-grid-container {
@@ -68,7 +87,7 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
  position:absolute;top:10.5%;left:10.5%;width:79%;height:79%;
  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
 }
-.mini-cell { position:relative; }
+.mini-cell { position:relative; width:100%; height:100%; }
 .mini-cell.checked::before,.mini-cell.checked::after{
  content:"";position:absolute;top:50%;left:50%;
  width:85%;height:4px;background:rgba(0,255,80,.6);border-radius:999px;
@@ -152,7 +171,7 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const PASSWORD = "1337";
 let editUnlocked = false;
-let globalCardsCached = []; // Tijdelijke opslag om niet constant de DB te hoeven aanroepen bij previews
+let globalCardsCached = []; 
 
 document.addEventListener("DOMContentLoaded", () => {
   loadPublicCards();
@@ -204,7 +223,6 @@ function buildPreviewGrid() {
  }
 }
 
-// KAART OPSLAAN IN SUPABASE (INSERT / UPSERT)
 async function saveCard(){
  const team = document.getElementById('teamName').value.trim();
  if(!team) return alert('Voer een teamnaam in');
@@ -214,7 +232,6 @@ async function saveCard(){
    if(c.classList.contains('checked')) checked.push(i);
  });
  
- // Upsert zorgt ervoor dat als het team al bestaat, hij wordt geüpdatet. Anders maakt hij een nieuwe aan.
  const { error } = await _supabase
    .from('bingo_cards')
    .upsert({ team: team, checked: checked }, { onConflict: 'team' });
@@ -234,7 +251,6 @@ function newCard(){
  document.querySelectorAll('#grid .cell').forEach(c => c.classList.remove('checked'));
 }
 
-// INLADEN IN BEHEERDERSSCHERM
 async function loadSavedCards(){
  const container = document.getElementById('savedCards');
  container.innerHTML = 'Laden...';
@@ -252,12 +268,11 @@ async function loadSavedCards(){
    return;
  }
 
- globalCardsCached = data; // Cache updaten
+ globalCardsCached = data; 
  
  data.forEach(card => {
    const row = document.createElement('div');
    row.className = 'card-item';
-   // Escapen van eventuele quotes in teamnaam voor de inline JS functions
    const safeTeam = card.team.replace(/'/g, "\\'");
    row.innerHTML = `<span>${card.team}</span>
    <span>
@@ -268,7 +283,6 @@ async function loadSavedCards(){
  });
 }
 
-// INLADEN IN OPENBAAR OVERZICHT
 async function loadPublicCards(){
  const container = document.getElementById('publicCardsContainer');
  container.innerHTML = '<p style="grid-column: 1/-1; color: #aaa;">Kaarten worden geladen...</p>';
@@ -281,7 +295,7 @@ async function loadPublicCards(){
  if(error) return container.innerHTML = 'Fout bij laden: ' + error.message;
  container.innerHTML = '';
  
- globalCardsCached = data; // Cache updaten
+ globalCardsCached = data; 
  
  if(data.length === 0) {
    container.innerHTML = '<p style="grid-column: 1/-1; color: #aaa;">Nog geen bingokaarten opgeslagen.</p>';
@@ -348,7 +362,6 @@ function editCard(teamName){
  });
 }
 
-// VERWIJDEREN UIT SUPABASE
 async function deleteCard(teamName){
  if(!unlockEdit()) return;
  if(confirm(`Kaart voor team '${teamName}' verwijderen?`)){
