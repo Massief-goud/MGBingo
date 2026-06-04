@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jungle Bingo Beheer</title>
+<style>
+*{box-sizing:border-box}
+body{
+ font-family:Arial,sans-serif;
+ background: url('https://i.postimg.cc/QNKW18c2/pexels-harsh-srivastava-1765262842-30201600.jpg') center/cover no-repeat fixed;
+ color:white;
+ margin:0;
+ padding:20px;
+}
+.tabs{display:flex;gap:10px;margin-bottom:15px}
+button{padding:10px 14px;border:none;border-radius:8px;cursor:pointer;background:rgba(68, 68, 68, 0.9);color:white;font-weight:bold}
+button:hover{background:rgba(85, 85, 85, 0.9)}
+.btn-save{background:rgba(0, 188, 212, 0.9);color:black}
+.btn-screenshot{background:rgba(76, 175, 80, 0.9);color:white}
+.btn-preview{background:rgba(255, 152, 0, 0.9);color:black}
+input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9);color:white;border:1px solid #444}
+.panel{display:none}
+.panel.active{display:block}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}
+
+/* Bingo Kaart */
+.bingo-board{
+ position:relative;width:min(90vw,600px);aspect-ratio:1/1;margin:0 auto;
+ background:url('https://i.postimg.cc/cHXMXPfN/bingo-template.png') center/contain no-repeat;
+}
+.team-overlay {
+ position:absolute;top:2.5%;left:0;width:100%;
+ text-align:center;font-size:calc(14px + 1.5vw);font-weight:Bold;
+ color:#46510e;text-shadow: 1px 1px 10px rgba(255,255,255,0.9);
+ pointer-events:none;text-transform:uppercase;letter-spacing:1px;
+}
+.grid{
+ position:absolute;top:10.5%;left:10.5%;width:79%;height:79%;
+ display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
+}
+.cell{position:relative;cursor:pointer}
+.cell.checked::before,.cell.checked::after{
+ content:"";position:absolute;top:50%;left:50%;
+ width:85%;height:14px;background:rgba(0,255,80,.35);border-radius:999px;
+}
+.cell.checked::before{transform:translate(-50%,-50%) rotate(45deg)}
+.cell.checked::after{transform:translate(-50%,-50%) rotate(-45deg)}
+
+/* Overzichtskaarten */
+.public-grid-container {
+ display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:20px;margin-top:15px;
+}
+.public-card {
+ background:rgba(34, 34, 34, 0.9);border:1px solid #333;border-radius:12px;padding:15px;
+ display:flex;flex-direction:column;align-items:center;gap:10px;
+}
+.public-card h3 {
+ margin:0;font-size:16px;text-transform:uppercase;color:#939168;text-align:center;
+ width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.mini-board {
+ position:relative;width:100%;aspect-ratio:1/1;
+ background:url('https://i.postimg.cc/cHXMXPfN/bingo-template.png') center/contain no-repeat;
+}
+.mini-grid {
+ position:absolute;top:10.5%;left:10.5%;width:79%;height:79%;
+ display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
+}
+.mini-cell { position:relative; }
+.mini-cell.checked::before,.mini-cell.checked::after{
+ content:"";position:absolute;top:50%;left:50%;
+ width:85%;height:4px;background:rgba(0,255,80,.6);border-radius:999px;
+}
+.mini-cell.checked::before{transform:translate(-50%,-50%) rotate(45deg)}
+.mini-cell.checked::after{transform:translate(-50%,-50%) rotate(-45deg)}
+.public-card button { width:100%; margin-top:5px; }
+
+/* Preview Modal */
+.preview-modal {
+ display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+ background:rgba(0,0,0,0.9);z-index:9999;justify-content:center;align-items:center;
+ padding:20px;
+}
+.preview-modal.active { display:flex; }
+.modal-content {
+ position:relative;width:100%;max-width:650px;
+ display:flex;flex-direction:column;gap:15px;
+}
+.modal-close {
+ position:absolute;top:-45px;right:0;font-size:32px;color:white;
+ background:none;border:none;cursor:pointer;font-weight:bold;
+}
+.modal-close:hover { color:#ff9800; }
+</style>
+</head>
+<body>
+
+<div class="tabs">
+<button onclick="showTab('public')">Overzicht Kaarten</button>
+<button onclick="showTab('editor')">Bingo Kaart Editor</button>
+<button onclick="showTab('saved')">Opgeslagen Kaarten (Staff)</button>
+</div>
+
+<!-- Openbaar overzicht -->
+<div id="public" class="panel active">
+<h2>Actueel Overzicht van alle deelnemende kaarten</h2>
+<p>Klik op "Bekijken" om een kaart te bekijken.</p>
+<div id="publicCardsContainer" class="public-grid-container"></div>
+</div>
+
+<!-- Editor -->
+<div id="editor" class="panel">
+<div class="controls">
+<input id="teamName" placeholder="Teamnaam" oninput="updateTeamOverlay()">
+<button class="btn-save" onclick="saveCard()">💾 Opslaan</button>
+<button class="btn-screenshot" onclick="takeScreenshot()">📷 Screenshot</button>
+<button onclick="newCard()">Nieuwe kaart</button>
+</div>
+
+<div class="bingo-board">
+<div id="teamOverlay" class="team-overlay"></div>
+<div class="grid" id="grid"></div>
+</div>
+</div>
+
+<!-- Staff paneel -->
+<div id="saved" class="panel">
+<h2>Opgeslagen kaarten (Beheer - Alleen Staff)</h2>
+<div id="savedCards"></div>
+</div>
+
+<!-- Preview Modal -->
+<div id="previewModal" class="preview-modal" onclick="closePreview(event)">
+ <div class="modal-content" onclick="event.stopPropagation()">
+   <button class="modal-close" onclick="closePreview(null)">&times;</button>
+   <div class="bingo-board">
+     <div id="previewTeamOverlay" class="team-overlay"></div>
+     <div id="previewGrid" class="grid"></div>
+   </div>
+ </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+// ================== CONFIG ==================
+const SUPABASE_URL = 'https://fjzwtjgtmlrcwiytpyqw.supabase.co/rest/v1/';   // ← VERANDER DIT
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqend0amd0bWxyY3dpeXRweXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1OTE1ODIsImV4cCI6MjA5NjE2NzU4Mn0.ne13FbGpwDq-qINjCCFBsM6EZgJeJK3LjxxEGM8Qw9M';                        // ← VERANDER DIT
+
+const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let editUnlocked = false;
+const PASSWORD = "1337";
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadPublicCards();
+  buildEditorGrid();
+  buildPreviewGrid();
+});
+
+// ================== BEVEILIGING ==================
+function unlockEdit(){
+  if(editUnlocked) return true;
+  const p = prompt("Voer beheerderscode in (1337):");
+  if(p === PASSWORD){
+    editUnlocked = true;
+    return true;
+  }
+  alert("Onjuiste code");
+  return false;
+}
+
+function showTab(id){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  
+  if(id === 'saved') {
+    if(!editUnlocked && !unlockEdit()) return;
+    loadSavedCards();
+  }
+  if(id === 'public') loadPublicCards();
+}
+
+// ================== EDITOR ==================
+function updateTeamOverlay() {
+  document.getElementById('teamOverlay').innerText = document.getElementById('teamName').value;
+}
+
+function buildEditorGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  for(let i = 0; i < 16; i++){
+    let c = document.createElement('div');
+    c.className = 'cell';
+    c.onclick = () => { if(unlockEdit()) c.classList.toggle('checked'); };
+    grid.appendChild(c);
+  }
+}
+
+function buildPreviewGrid() {
+  const pGrid = document.getElementById('previewGrid');
+  pGrid.innerHTML = '';
+  for(let i = 0; i < 16; i++){
+    let c = document.createElement('div');
+    c.className = 'cell';
+    pGrid.appendChild(c);
+  }
+}
+
+// ================== CRUD ==================
+async function saveCard(){
+  if(!unlockEdit()) return;
+  const team = document.getElementById('teamName').value.trim();
+  if(!team) return alert('Voer een teamnaam in');
+
+  const checked = [];
+  document.querySelectorAll('#grid .cell').forEach((c,i) => {
+    if(c.classList.contains('checked')) checked.push(i);
+  });
+
+  const { error } = await supabase
+    .from('bingo_cards')
+    .upsert({ team, checked }, { onConflict: 'team' });
+
+  if(error) alert('Fout: ' + error.message);
+  else {
+    alert('Kaart opgeslagen!');
+    loadPublicCards();
+  }
+}
+
+async function loadPublicCards(){
+  const container = document.getElementById('publicCardsContainer');
+  container.innerHTML = '';
+
+  const { data, error } = await supabase
+    .from('bingo_cards')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if(error || !data?.length) {
+    container.innerHTML = '<p style="grid-column:1/-1;color:#aaa;">Nog geen bingokaarten opgeslagen.</p>';
+    return;
+  }
+
+  data.forEach(card => {
+    const cardDiv = document.createElement('div');
+    cardDiv.className = 'public-card';
+    cardDiv.innerHTML = `
+      <h3>${card.team}</h3>
+      <div class="mini-board"><div class="mini-grid"></div></div>
+      <button class="btn-preview" onclick="openPreview('${card.team.replace(/'/g,"\\'")}')">Bekijken</button>
+    `;
+
+    const miniGrid = cardDiv.querySelector('.mini-grid');
+    for(let i = 0; i < 16; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'mini-cell';
+      if(card.checked?.includes(i)) cell.classList.add('checked');
+      miniGrid.appendChild(cell);
+    }
+    container.appendChild(cardDiv);
+  });
+}
+
+async function loadSavedCards(){
+  const container = document.getElementById('savedCards');
+  container.innerHTML = '';
+
+  const { data } = await supabase.from('bingo_cards').select('*').order('created_at', { ascending: false });
+
+  if(!data?.length) {
+    container.innerHTML = '<p>Geen kaarten gevonden.</p>';
+    return;
+  }
+
+  data.forEach(card => {
+    const row = document.createElement('div');
+    row.style = 'display:flex;justify-content:space-between;align-items:center;background:rgba(34,34,34,0.9);padding:12px;border-radius:8px;margin:8px 0;';
+    row.innerHTML = `
+      <span>${card.team}</span>
+      <span>
+        <button onclick="editCard('${card.team}')" style="margin-right:8px">Bewerken</button>
+        <button onclick="deleteCard('${card.team}')" style="background:#d32f2f;color:white">Verwijderen</button>
+      </span>`;
+    container.appendChild(row);
+  });
+}
+
+async function deleteCard(team){
+  if(!unlockEdit()) return;
+  if(!confirm(`Kaart van ${team} verwijderen?`)) return;
+
+  await supabase.from('bingo_cards').delete().eq('team', team);
+  loadSavedCards();
+  loadPublicCards();
+}
+
+async function editCard(team){
+  if(!unlockEdit()) return;
+  const { data } = await supabase.from('bingo_cards').select('*').eq('team', team).single();
+  if(!data) return;
+
+  showTab('editor');
+  newCard();
+  document.getElementById('teamName').value = data.team;
+  updateTeamOverlay();
+
+  document.querySelectorAll('#grid .cell').forEach((c,i) => {
+    c.classList.toggle('checked', data.checked?.includes(i));
+  });
+}
+
+function openPreview(teamName) {
+  supabase.from('bingo_cards').select('*').eq('team', teamName).single().then(({data}) => {
+    if(!data) return;
+    document.getElementById('previewTeamOverlay').innerText = data.team;
+    document.querySelectorAll('#previewGrid .cell').forEach((c,i) => {
+      c.classList.toggle('checked', data.checked?.includes(i));
+    });
+    document.getElementById('previewModal').classList.add('active');
+  });
+}
+
+function closePreview(e) {
+  if(!e || e.target.id === 'previewModal') document.getElementById('previewModal').classList.remove('active');
+}
+
+function newCard(){
+  document.getElementById('teamName').value = '';
+  updateTeamOverlay();
+  document.querySelectorAll('#grid .cell').forEach(c => c.classList.remove('checked'));
+}
+
+function takeScreenshot() {
+  // (je originele screenshot functie - ongewijzigd)
+  const teamName = document.getElementById('teamName').value.trim() || "Jungle Bingo";
+  const checked = [];
+  document.querySelectorAll('#grid .cell').forEach((c,i) => { if(c.classList.contains('checked')) checked.push(i); });
+  
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = 'https://i.postimg.cc/cHXMXPfN/bingo-template.png';
+  img.onload = function() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = img.width; canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    
+    ctx.font = "bold 46px Copperplate";
+    ctx.fillStyle = "#ab8038";
+    ctx.shadowColor = "rgba(0,0,0,0.8)";
+    ctx.shadowBlur = 6; ctx.shadowOffsetX = 6; ctx.shadowOffsetY = 6;
+    ctx.textAlign = "center";
+    ctx.fillText(teamName.toUpperCase(), canvas.width/2, canvas.height*0.08);
+    
+    ctx.shadowBlur = ctx.shadowOffsetX = ctx.shadowOffsetY = 0;
+    const gridTop = canvas.height * 0.105;
+    const gridLeft = canvas.width * 0.105;
+    const gridSize = canvas.width * 0.79;
+    const cellSize = gridSize / 4;
+    
+    checked.forEach(index => {
+      const row = Math.floor(index / 4);
+      const col = index % 4;
+      const x = gridLeft + col * cellSize + cellSize/2;
+      const y = gridTop + row * cellSize + cellSize/2;
+      const len = cellSize * 0.42;
+      
+      ctx.strokeStyle = "rgba(0,255,80,0.45)";
+      ctx.lineWidth = 16;
+      ctx.lineCap = "round";
+      
+      ctx.beginPath(); ctx.moveTo(x-len, y-len); ctx.lineTo(x+len, y+len); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x-len, y+len); ctx.lineTo(x+len, y-len); ctx.stroke();
+    });
+    
+    const link = document.createElement('a');
+    link.download = `Bingo_${teamName.replace(/[^a-z0-9]/gi, '_')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
+}
+</script>
+</body>
+</html>
