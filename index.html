@@ -24,25 +24,25 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
 .panel.active{display:block}
 .controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}
 
-/* Bingo Kaart */
+/* Bingo Kaart - NIEUWE TEMPLATE */
 .bingo-board{
- position:relative;width:min(90vw,600px);aspect-ratio:1/1;margin:0 auto;
- background:url('https://i.postimg.cc/cHXMXPfN/bingo-template.png') center/contain no-repeat;
+ position:relative;width:min(90vw,620px);aspect-ratio:1/1;margin:0 auto;
+ background:url('./bingo templateV1.png') center/contain no-repeat;
 }
 .team-overlay {
- position:absolute;top:2.5%;left:0;width:100%;
+ position:absolute;top:3%;left:0;width:100%;
  text-align:center;font-size:calc(14px + 1.5vw);font-weight:Bold;
- color:#46510e;text-shadow: 1px 1px 10px rgba(255,255,255,0.9);
- pointer-events:none;text-transform:uppercase;letter-spacing:1px;
+ color:#f5d76e;text-shadow: 2px 2px 8px rgba(0,0,0,0.9);
+ pointer-events:none;text-transform:uppercase;letter-spacing:2px;
 }
 .grid{
- position:absolute;top:10.5%;left:10.5%;width:79%;height:79%;
+ position:absolute;top:12%;left:11.5%;width:77%;height:77%;
  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
 }
 .cell{position:relative;cursor:pointer}
 .cell.checked::before,.cell.checked::after{
  content:"";position:absolute;top:50%;left:50%;
- width:85%;height:14px;background:rgba(0,255,80,.35);border-radius:999px;
+ width:82%;height:13px;background:rgba(0,255,80,.45);border-radius:999px;
 }
 .cell.checked::before{transform:translate(-50%,-50%) rotate(45deg)}
 .cell.checked::after{transform:translate(-50%,-50%) rotate(-45deg)}
@@ -56,21 +56,21 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
  display:flex;flex-direction:column;align-items:center;gap:10px;
 }
 .public-card h3 {
- margin:0;font-size:16px;text-transform:uppercase;color:#939168;text-align:center;
+ margin:0;font-size:16px;text-transform:uppercase;color:#f5d76e;text-align:center;
  width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .mini-board {
  position:relative;width:100%;aspect-ratio:1/1;
- background:url('https://i.postimg.cc/cHXMXPfN/bingo-template.png') center/contain no-repeat;
+ background:url('./bingo templateV1.png') center/contain no-repeat;
 }
 .mini-grid {
- position:absolute;top:10.5%;left:10.5%;width:79%;height:79%;
+ position:absolute;top:12%;left:11.5%;width:77%;height:77%;
  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
 }
 .mini-cell { position:relative; }
 .mini-cell.checked::before,.mini-cell.checked::after{
  content:"";position:absolute;top:50%;left:50%;
- width:85%;height:4px;background:rgba(0,255,80,.6);border-radius:999px;
+ width:82%;height:4px;background:rgba(0,255,80,.7);border-radius:999px;
 }
 .mini-cell.checked::before{transform:translate(-50%,-50%) rotate(45deg)}
 .mini-cell.checked::after{transform:translate(-50%,-50%) rotate(-45deg)}
@@ -92,6 +92,24 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
  background:none;border:none;cursor:pointer;font-weight:bold;
 }
 .modal-close:hover { color:#ff9800; }
+
+/* Win Highlights */
+.win-overlay {
+  position: absolute;
+  background: rgba(0, 255, 80, 0.28);
+  box-shadow: 0 0 30px rgba(0, 255, 80, 0.75);
+  pointer-events: none;
+  z-index: 5;
+  border-radius: 8px;
+}
+.global-win-overlay {
+  position: absolute;
+  background: rgba(220, 20, 60, 0.55);
+  box-shadow: 0 0 40px rgba(220, 20, 60, 0.9);
+  pointer-events: none;
+  z-index: 6;
+  border-radius: 8px;
+}
 </style>
 </head>
 <body>
@@ -106,6 +124,9 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
 <div id="public" class="panel active">
 <h2>Actueel Overzicht van alle deelnemende kaarten</h2>
 <p>Klik op "Bekijken" om een kaart te bekijken.</p>
+<button class="btn-screenshot" onclick="takeAllCardsScreenshot()" style="margin-bottom:15px;">
+📷 Screenshot van alle kaarten
+</button>
 <div id="publicCardsContainer" class="public-grid-container"></div>
 </div>
 
@@ -141,6 +162,7 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
  </div>
 </div>
 
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script>
 const PASSWORD = "1337";
 let editUnlocked = false;
@@ -171,203 +193,308 @@ function updateTeamOverlay() {
  document.getElementById('teamOverlay').innerText = name;
 }
 
+// GLOBAL WINS + overige functies blijven hetzelfde als vorige versie
+function getGlobalWins() {
+  const rowWins = new Set();
+  const colWins = new Set();
+  Object.keys(localStorage).filter(k => k.startsWith('bingo_')).forEach(key => {
+    const data = JSON.parse(localStorage.getItem(key) || '{}');
+    const checked = new Array(16).fill(false);
+    (data.checked || []).forEach(i => checked[i] = true);
+    for(let r = 0; r < 4; r++) {
+      if(checked.slice(r*4, r*4 + 4).every(Boolean)) rowWins.add(r);
+    }
+    for(let c = 0; c < 4; c++) {
+      if([0,1,2,3].every(r => checked[r*4 + c])) colWins.add(c);
+    }
+  });
+  return { rowWins: Array.from(rowWins), colWins: Array.from(colWins) };
+}
+
+function updateWinHighlights() {
+  const checked = Array.from(document.querySelectorAll('#grid .cell')).map(c => c.classList.contains('checked'));
+  const container = document.getElementById('grid');
+  document.querySelectorAll('#grid .win-overlay').forEach(el => el.remove());
+
+  for(let row = 0; row < 4; row++) {
+    if(checked.slice(row*4, row*4+4).every(v => v)) createWinOverlay(container, 'row', row, 'win-overlay');
+  }
+  for(let col = 0; col < 4; col++) {
+    if([0,1,2,3].every(r => checked[r*4 + col])) createWinOverlay(container, 'col', col, 'win-overlay');
+  }
+}
+
+function createWinOverlay(container, type, index, className = 'win-overlay') {
+  const overlay = document.createElement('div');
+  overlay.className = className;
+  if(type === 'row') {
+    overlay.style.top = `${12 + (index * 19.25)}%`;
+    overlay.style.left = '11.5%';
+    overlay.style.width = '77%';
+    overlay.style.height = '19%';
+  } else {
+    overlay.style.top = '12%';
+    overlay.style.left = `${11.5 + (index * 19.25)}%`;
+    overlay.style.width = '19%';
+    overlay.style.height = '77%';
+  }
+  container.appendChild(overlay);
+}
+
 function buildEditorGrid() {
- const grid = document.getElementById('grid');
- grid.innerHTML = '';
- for(let i = 0; i < 16; i++){
-  let c = document.createElement('div');
-  c.className = 'cell';
-  c.onclick = () => {
-    if(!unlockEdit()) return;
-    c.classList.toggle('checked');
-  };
-  grid.appendChild(c);
- }
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  for(let i = 0; i < 16; i++){
+    let c = document.createElement('div');
+    c.className = 'cell';
+    c.onclick = () => {
+      if(!unlockEdit()) return;
+      c.classList.toggle('checked');
+      updateWinHighlights();
+    };
+    grid.appendChild(c);
+  }
 }
 
 function buildPreviewGrid() {
- const pGrid = document.getElementById('previewGrid');
- pGrid.innerHTML = '';
- for(let i = 0; i < 16; i++){
-  let c = document.createElement('div');
-  c.className = 'cell';
-  pGrid.appendChild(c);
- }
-}
-
-function saveCard(){
- const team = document.getElementById('teamName').value.trim();
- if(!team) return alert('Voer een teamnaam in');
- 
- const checked = [];
- document.querySelectorAll('#grid .cell').forEach((c,i) => {
-   if(c.classList.contains('checked')) checked.push(i);
- });
- 
- localStorage.setItem('bingo_' + team, JSON.stringify({team, checked}));
- alert('Kaart opgeslagen!');
- loadSavedCards();
- loadPublicCards();
-}
-
-function newCard(){
- document.getElementById('teamName').value = '';
- updateTeamOverlay();
- document.querySelectorAll('#grid .cell').forEach(c => c.classList.remove('checked'));
-}
-
-function loadSavedCards(){
- const container = document.getElementById('savedCards');
- container.innerHTML = '';
- 
- Object.keys(localStorage)
- .filter(k => k.startsWith('bingo_'))
- .forEach(key => {
-   const data = JSON.parse(localStorage.getItem(key));
-   const row = document.createElement('div');
-   row.className = 'card-item';
-   row.innerHTML = `<span>${data.team}</span>
-   <span>
-     <button onclick="editCard('${data.team}')">Bewerken</button>
-     <button onclick="deleteCard('${data.team}')">Verwijderen</button>
-   </span>`;
-   container.appendChild(row);
- });
+  const pGrid = document.getElementById('previewGrid');
+  pGrid.innerHTML = '';
+  for(let i = 0; i < 16; i++){
+    let c = document.createElement('div');
+    c.className = 'cell';
+    pGrid.appendChild(c);
+  }
 }
 
 function loadPublicCards(){
- const container = document.getElementById('publicCardsContainer');
- container.innerHTML = '';
+  const container = document.getElementById('publicCardsContainer');
+  container.innerHTML = '';
  
- const keys = Object.keys(localStorage).filter(k => k.startsWith('bingo_'));
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('bingo_'));
+  const global = getGlobalWins();
+
+  if(keys.length === 0) {
+    container.innerHTML = '<p style="grid-column: 1/-1; color: #aaa;">Nog geen bingokaarten opgeslagen.</p>';
+    return;
+  }
  
- if(keys.length === 0) {
-   container.innerHTML = '<p style="grid-column: 1/-1; color: #aaa;">Nog geen bingokaarten opgeslagen.</p>';
-   return;
- }
- 
- keys.forEach(key => {
-   const data = JSON.parse(localStorage.getItem(key));
-   const cardDiv = document.createElement('div');
-   cardDiv.className = 'public-card';
+  keys.forEach(key => {
+    const data = JSON.parse(localStorage.getItem(key));
+    const cardDiv = document.createElement('div');
+    cardDiv.className = 'public-card';
+    cardDiv.dataset.team = data.team;
+
+    cardDiv.innerHTML = `
+      <h3>${data.team}</h3>
+      <div class="mini-board">
+        <div class="mini-grid"></div>
+      </div>
+      <button class="btn-preview">Bekijken</button>
+    `;
    
-   cardDiv.innerHTML = `
-     <h3>${data.team}</h3>
-     <div class="mini-board">
-       <div class="mini-grid"></div>
-     </div>
-     <button class="btn-preview" onclick="openPreview('${data.team.replace(/'/g, "\\'")}')">Bekijken</button>
-   `;
+    const miniGrid = cardDiv.querySelector('.mini-grid');
    
-   const miniGrid = cardDiv.querySelector('.mini-grid');
-   for(let i = 0; i < 16; i++) {
-     const miniCell = document.createElement('div');
-     miniCell.className = 'mini-cell';
-     if(data.checked.includes(i)) miniCell.classList.add('checked');
-     miniGrid.appendChild(miniCell);
-   }
-   container.appendChild(cardDiv);
- });
+    for(let i = 0; i < 16; i++) {
+      const miniCell = document.createElement('div');
+      miniCell.className = 'mini-cell';
+      if(data.checked.includes(i)) miniCell.classList.add('checked');
+      miniGrid.appendChild(miniCell);
+    }
+   
+    global.rowWins.forEach(row => {
+      const overlay = document.createElement('div');
+      overlay.className = 'global-win-overlay';
+      overlay.style.top = `${row * 25}%`;
+      overlay.style.left = '0%';
+      overlay.style.width = '100%';
+      overlay.style.height = '25%';
+      miniGrid.appendChild(overlay);
+    });
+   
+    global.colWins.forEach(col => {
+      const overlay = document.createElement('div');
+      overlay.className = 'global-win-overlay';
+      overlay.style.top = '0%';
+      overlay.style.left = `${col * 25}%`;
+      overlay.style.width = '25%';
+      overlay.style.height = '100%';
+      miniGrid.appendChild(overlay);
+    });
+   
+    cardDiv.querySelector('.btn-preview').addEventListener('click', () => openPreview(data.team));
+   
+    container.appendChild(cardDiv);
+  });
 }
 
 function openPreview(teamName) {
- const data = JSON.parse(localStorage.getItem('bingo_' + teamName));
- if(!data) return;
+  const data = JSON.parse(localStorage.getItem('bingo_' + teamName));
+  if(!data) return;
  
- document.getElementById('previewTeamOverlay').innerText = data.team;
+  document.getElementById('previewTeamOverlay').innerText = data.team;
  
- const previewCells = document.querySelectorAll('#previewGrid .cell');
- previewCells.forEach((cell, i) => {
-   cell.classList.toggle('checked', data.checked.includes(i));
- });
+  const previewCells = document.querySelectorAll('#previewGrid .cell');
+  previewCells.forEach((cell, i) => cell.classList.toggle('checked', data.checked.includes(i)));
  
- document.getElementById('previewModal').classList.add('active');
+  const previewGrid = document.getElementById('previewGrid');
+  document.querySelectorAll('#previewGrid .win-overlay, #previewGrid .global-win-overlay').forEach(el => el.remove());
+ 
+  const global = getGlobalWins();
+  global.rowWins.forEach(r => createWinOverlay(previewGrid, 'row', r, 'global-win-overlay'));
+  global.colWins.forEach(c => createWinOverlay(previewGrid, 'col', c, 'global-win-overlay'));
+ 
+  document.getElementById('previewModal').classList.add('active');
 }
 
-function closePreview(event) {
- if(!event || event.target.id === 'previewModal') {
-   document.getElementById('previewModal').classList.remove('active');
- }
+// Screenshot alle kaarten
+async function takeAllCardsScreenshot() {
+  const tempContainer = document.createElement('div');
+  tempContainer.style.position = 'absolute';
+  tempContainer.style.left = '-9999px';
+  tempContainer.style.background = '#111';
+  tempContainer.style.padding = '40px';
+  tempContainer.style.width = '820px';
+  document.body.appendChild(tempContainer);
+
+  const title = document.createElement('h2');
+  title.textContent = '🌴 Jungle Bingo - Alle Kaarten';
+  title.style.color = '#fff';
+  title.style.textAlign = 'center';
+  title.style.marginBottom = '40px';
+  tempContainer.appendChild(title);
+
+  document.querySelectorAll('.public-card').forEach(card => {
+    const clone = card.cloneNode(true);
+    clone.style.marginBottom = '50px';
+    clone.style.boxShadow = '0 15px 35px rgba(0,0,0,0.7)';
+    tempContainer.appendChild(clone);
+  });
+
+  try {
+    const canvas = await html2canvas(tempContainer, { scale: 2, backgroundColor: '#111' });
+    const link = document.createElement('a');
+    link.download = `Jungle_Bingo_Alle_Kaarten_${new Date().toISOString().slice(0,10)}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch(e) {
+    alert('Screenshot maken mislukt.');
+  }
+
+  document.body.removeChild(tempContainer);
+}
+
+// Overige functies (save, edit, delete, screenshot)
+function saveCard(){
+  const team = document.getElementById('teamName').value.trim();
+  if(!team) return alert('Voer een teamnaam in');
+  const checked = [];
+  document.querySelectorAll('#grid .cell').forEach((c,i) => {
+    if(c.classList.contains('checked')) checked.push(i);
+  });
+  localStorage.setItem('bingo_' + team, JSON.stringify({team, checked}));
+  alert('Kaart opgeslagen!');
+  loadSavedCards();
+  loadPublicCards();
+}
+
+function newCard(){
+  document.getElementById('teamName').value = '';
+  updateTeamOverlay();
+  document.querySelectorAll('#grid .cell').forEach(c => c.classList.remove('checked'));
+  updateWinHighlights();
+}
+
+function loadSavedCards(){
+  const container = document.getElementById('savedCards');
+  container.innerHTML = '';
+  Object.keys(localStorage).filter(k => k.startsWith('bingo_')).forEach(key => {
+    const data = JSON.parse(localStorage.getItem(key));
+    const row = document.createElement('div');
+    row.className = 'card-item';
+    row.innerHTML = `<span>${data.team}</span>
+    <span>
+      <button onclick="editCard('${data.team.replace(/'/g, "\\'")}')">Bewerken</button>
+      <button onclick="deleteCard('${data.team.replace(/'/g, "\\'")}')">Verwijderen</button>
+    </span>`;
+    container.appendChild(row);
+  });
 }
 
 function editCard(team){
- if(!unlockEdit()) return;
- const data = JSON.parse(localStorage.getItem('bingo_'+team));
- showTab('editor');
- newCard();
- document.getElementById('teamName').value = data.team;
- updateTeamOverlay();
- data.checked.forEach(i => {
-   document.querySelectorAll('#grid .cell')[i].classList.add('checked');
- });
+  if(!unlockEdit()) return;
+  const data = JSON.parse(localStorage.getItem('bingo_'+team));
+  showTab('editor');
+  newCard();
+  document.getElementById('teamName').value = data.team;
+  updateTeamOverlay();
+  data.checked.forEach(i => document.querySelectorAll('#grid .cell')[i].classList.add('checked'));
+  updateWinHighlights();
 }
 
 function deleteCard(team){
- if(!unlockEdit()) return;
- if(confirm('Kaart verwijderen?')){
-   localStorage.removeItem('bingo_'+team);
-   loadSavedCards();
-   loadPublicCards();
- }
+  if(!unlockEdit()) return;
+  if(confirm('Kaart verwijderen?')){
+    localStorage.removeItem('bingo_'+team);
+    loadSavedCards();
+    loadPublicCards();
+  }
 }
 
 function takeScreenshot() {
- const teamName = document.getElementById('teamName').value.trim() || "Jungle Bingo";
- const checked = [];
- document.querySelectorAll('#grid .cell').forEach((c,i) => {
-   if(c.classList.contains('checked')) checked.push(i);
- });
- 
- const img = new Image();
- img.crossOrigin = "anonymous";
- img.src = 'https://i.postimg.cc/cHXMXPfN/bingo-template.png';
- img.onload = function() {
-   const canvas = document.createElement('canvas');
-   const ctx = canvas.getContext('2d');
-   canvas.width = img.width;
-   canvas.height = img.height;
-   ctx.drawImage(img, 0, 0);
+  const teamName = document.getElementById('teamName').value.trim() || "Jungle Bingo";
+  const checked = [];
+  document.querySelectorAll('#grid .cell').forEach((c,i) => {
+    if(c.classList.contains('checked')) checked.push(i);
+  });
+  
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = './bingo templateV1.png';
+  img.onload = function() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = img.width; canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
    
-   ctx.font = "bold 46px Copperplate";
-   ctx.fillStyle = "#ab8038";
-   ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
-   ctx.shadowBlur = 6; ctx.shadowOffsetX = 6; ctx.shadowOffsetY = 6;
-   ctx.textAlign = "center";
-   ctx.fillText(teamName.toUpperCase(), canvas.width / 2, canvas.height * 0.08);
+    ctx.font = "bold 48px Copperplate";
+    ctx.fillStyle = "#f5d76e";
+    ctx.shadowColor = "rgba(0,0,0,0.9)";
+    ctx.shadowBlur = 8; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 4;
+    ctx.textAlign = "center";
+    ctx.fillText(teamName.toUpperCase(), canvas.width / 2, canvas.height * 0.085);
    
-   ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
-   const gridTop = canvas.height * 0.105;
-   const gridLeft = canvas.width * 0.105;
-   const gridSize = canvas.width * 0.79;
-   const cellSize = gridSize / 4;
+    ctx.shadowBlur = 0;
+    const gridTop = canvas.height * 0.12;
+    const gridLeft = canvas.width * 0.115;
+    const gridSize = canvas.width * 0.77;
+    const cellSize = gridSize / 4;
    
-   checked.forEach(index => {
-     const row = Math.floor(index / 4);
-     const col = index % 4;
-     const centerX = gridLeft + (col * cellSize) + (cellSize / 2);
-     const centerY = gridTop + (row * cellSize) + (cellSize / 2);
-     const lineLength = cellSize * 0.42;
+    checked.forEach(index => {
+      const row = Math.floor(index / 4);
+      const col = index % 4;
+      const centerX = gridLeft + (col * cellSize) + (cellSize / 2);
+      const centerY = gridTop + (row * cellSize) + (cellSize / 2);
+      const lineLength = cellSize * 0.4;
      
-     ctx.strokeStyle = "rgba(0, 255, 80, 0.45)";
-     ctx.lineWidth = 16;
-     ctx.lineCap = "round";
+      ctx.strokeStyle = "rgba(0, 255, 80, 0.55)";
+      ctx.lineWidth = 18;
+      ctx.lineCap = "round";
      
-     ctx.beginPath();
-     ctx.moveTo(centerX - lineLength, centerY - lineLength);
-     ctx.lineTo(centerX + lineLength, centerY + lineLength);
-     ctx.stroke();
-     
-     ctx.beginPath();
-     ctx.moveTo(centerX - lineLength, centerY + lineLength);
-     ctx.lineTo(centerX + lineLength, centerY - lineLength);
-     ctx.stroke();
-   });
+      ctx.beginPath(); ctx.moveTo(centerX - lineLength, centerY - lineLength); ctx.lineTo(centerX + lineLength, centerY + lineLength); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(centerX - lineLength, centerY + lineLength); ctx.lineTo(centerX + lineLength, centerY - lineLength); ctx.stroke();
+    });
    
-   const link = document.createElement('a');
-   link.download = `Bingo_${teamName.replace(/[^a-z0-9]/gi, '_')}.png`;
-   link.href = canvas.toDataURL('image/png');
-   link.click();
- };
+    const link = document.createElement('a');
+    link.download = `Bingo_${teamName.replace(/[^a-z0-9]/gi, '_')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
+}
+
+function closePreview(event) {
+  if(!event || event.target.id === 'previewModal') {
+    document.getElementById('previewModal').classList.remove('active');
+  }
 }
 </script>
 </body>
