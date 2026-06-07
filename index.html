@@ -39,7 +39,7 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
 .grid{
  position:absolute;top:10.5%;left:10.5%;width:79%;height:79%;
  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
- z-index:2; /* Zorgt dat de cellen boven de balken liggen om klikbaar te blijven */
+ z-index:2;
 }
 .cell{position:relative;cursor:pointer}
 .cell.checked::before,.cell.checked::after{
@@ -52,7 +52,7 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
 /* CSS voor de donkere transparante Bingo balken */
 .bingo-bar {
  position: absolute;
- background: rgba(0, 0, 0, 0.55); /* Donkere transparante kleur */
+ background: rgba(0, 0, 0, 0.55);
  border-radius: 8px;
  pointer-events: none;
  z-index: 1;
@@ -62,7 +62,7 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
  display: block;
 }
 
-/* Rij posities (79% breedte/hoogte verdeeld over 4 rijen van elk ~19.75%) */
+/* Rij posities */
 .bar-row-0 { top: 10.5%; left: 10.5%; width: 79%; height: 19.75%; }
 .bar-row-1 { top: 30.25%; left: 10.5%; width: 79%; height: 19.75%; }
 .bar-row-2 { top: 50%; left: 10.5%; width: 79%; height: 19.75%; }
@@ -116,4 +116,28 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
  display:flex;flex-direction:column;gap:15px;
 }
 .modal-close {
- position
+ position:absolute;top:-45px;right:0;font-size:32px;color:white;
+ background:none;border:none;cursor:pointer;font-weight:bold;
+}
+.modal-close:hover { color:#ff9800; }
+
+.card-item {
+ display: flex; justify-content: space-between; align-items: center;
+ background: rgba(34,34,34,0.9); padding: 10px 15px; border-radius: 8px;
+ margin-bottom: 8px; border: 1px solid #444;
+}
+</style>
+</head>
+<body>
+
+<div class="tabs">
+<button onclick="showTab('public')">Overzicht Kaarten</button>
+<button onclick="showTab('editor')">Bingo Kaart Editor</button>
+<button onclick="showTab('saved')">Opgeslagen Kaarten (Staff)</button>
+</div>
+
+<div id="public" class="panel active">
+<h2>Actueel Overzicht van alle deelnemende kaarten</h2>
+<p>Klik op "Bekijken" om een kaart te bekijken.</p>
+<div id="publicCardsContainer" class="public-grid-container"></div>
+</div>
