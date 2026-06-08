@@ -97,19 +97,21 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
 /* Win Highlights */
 .win-overlay {
   position: absolute;
-  background: rgba(0, 255, 80, 0.28);
-  box-shadow: 0 0 30px rgba(0, 255, 80, 0.75);
+  background: rgba(0, 255, 80, 0.35);
+  box-shadow: 0 0 40px rgba(0, 255, 80, 0.9), inset 0 0 20px rgba(0, 255, 80, 0.5);
   pointer-events: none;
-  z-index: 5;
+  z-index: 10;
   border-radius: 8px;
+  border: 2px solid rgba(0, 255, 80, 0.8);
 }
 .global-win-overlay {
   position: absolute;
-  background: rgba(349, 99, 49, 0.2);
-  box-shadow: 0 0 4px rgba(349, 99, 49, 0.6);
+  background: rgba(255, 140, 0, 0.3);
+  box-shadow: 0 0 35px rgba(255, 140, 0, 0.85), inset 0 0 15px rgba(255, 140, 0, 0.5);
   pointer-events: none;
-  z-index: 3;
+  z-index: 8;
   border-radius: 8px;
+  border: 2px solid rgba(255, 140, 0, 0.8);
 }
 
 /* Card Item in Staff Panel */
@@ -191,9 +193,14 @@ const SUPABASE_URL = "https://fjzwtjgtmlrcwiytpyqw.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqend0amd0bWxyY3dpeXRweXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1OTE1ODIsImV4cCI6MjA5NjE2NzU4Mn0.ne13FbGpwDq-qINjCCFBsM6EZgJeJK3LjxxEGM8Qw9M";
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const PASSWORD = "1337";
+// Beveiligd wachtwoord (base64 gecodeerd)
+const _AUTH_CODE = "TXMxMzM3Qmc=";
 let editUnlocked = false;
 let globalCardsCached = []; // Tijdelijke opslag om niet constant de DB te hoeven aanroepen bij previews
+
+function _verifyAuth(input) {
+  return btoa(input) === _AUTH_CODE;
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   loadPublicCards();
@@ -204,7 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function unlockEdit(){
  if(editUnlocked) return true;
  const p = prompt("Voer beheerderscode in:");
- if(p === PASSWORD){ editUnlocked = true; return true; }
+ if(p && _verifyAuth(p)){ editUnlocked = true; return true; }
  alert("Onjuiste code");
  return false;
 }
