@@ -165,26 +165,21 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// ==================== SUPABASE CONFIG ====================
-const SUPABASE_URL = "https://fjzwtjgtmlrcwiytpyqw.supabase.co";
+// --- SUPABASE CONFIGURATIE ---
+const SUPABASE_URL = "https://fjzwtjgtmlrcwiytpyqw.supabase.co"; 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqend0amd0bWxyY3dpeXRweXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1OTE1ODIsImV4cCI6MjA5NjE2NzU4Mn0.ne13FbGpwDq-qINjCCFBsM6EZgJeJK3LjxxEGM8Qw9M";
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let supabaseClient = null;
+const PASSWORD = "1337";
+let editUnlocked = false;
+let globalCardsCached = []; // Tijdelijke opslag om niet constant de DB te hoeven aanroepen bij previews
 
-async function initSupabase() {
-  const statusEl = document.getElementById('statusMessage');
-  try {
-    supabaseClient = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    statusEl.innerHTML = '✅ Supabase verbonden';
-    statusEl.style.color = '#0f0';
-    return true;
-  } catch (e) {
-    statusEl.innerHTML = '❌ Supabase verbindingsfout';
-    statusEl.style.color = 'red';
-    console.error(e);
-    return false;
-  }
-}
+document.addEventListener("DOMContentLoaded", () => {
+  loadPublicCards();
+  buildEditorGrid();
+  buildPreviewGrid();
+});
+
 
 // ==================== BASIS ====================
 const PASSWORD = "1337";
