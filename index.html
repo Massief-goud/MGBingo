@@ -152,7 +152,7 @@ const SUPABASE_URL = "https://fjzwtjgtmlrcwiytpyqw.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqend0amd0bWxyY3dpeXRweXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1OTE1ODIsImV4cCI6MjA5NjE2NzU4Mn0.ne13FbGpwDq-qINjCCFBsM6EZgJeJK3LjxxEGM8Qw9M";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const ADMIN_SECRET = "1337";   // ← Hier kun je later een sterkere code zetten
+const ADMIN_SECRET = "1337";   
 let editUnlocked = false;
 let globalCards = [];
 
@@ -169,7 +169,7 @@ function unlockEdit(){
     editUnlocked = true; 
     return true; 
   }
-  alert("Onjuiste code");
+  alert("HA, FOUT! Groetjes, Bucketboi");
   return false;
 }
 
