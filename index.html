@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jungle Bingo Beheer</title>
+<title>Massief Goud - Jungle Bingo - Hawx.</title>
 <style>
 *{box-sizing:border-box}
 body{
@@ -13,19 +13,18 @@ body{
  margin:0;
  padding:20px;
 }
-.tabs{display:flex;gap:10px;margin-bottom:15px; flex-wrap:wrap}
+.tabs{display:flex;gap:10px;margin-bottom:15px}
 button{padding:10px 14px;border:none;border-radius:8px;cursor:pointer;background:rgba(68, 68, 68, 0.9);color:white;font-weight:bold}
 button:hover{background:rgba(85, 85, 85, 0.9)}
 .btn-save{background:rgba(0, 188, 212, 0.9);color:black}
 .btn-screenshot{background:rgba(76, 175, 80, 0.9);color:white}
 .btn-preview{background:rgba(255, 152, 0, 0.9);color:black}
-.btn-supabase{background:rgba(0, 200, 100, 0.9);color:black}
 input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9);color:white;border:1px solid #444}
 .panel{display:none}
 .panel.active{display:block}
 .controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}
 
-/* Bingo Kaart */
+/* Bingo Kaart - NIEUWE TEMPLATE */
 .bingo-board{
  position:relative;width:min(90vw,620px);aspect-ratio:1/1;margin:0 auto;
  background:url('./bingo templateV1.png') center/contain no-repeat;
@@ -71,7 +70,7 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
 .mini-cell { position:relative; }
 .mini-cell.checked::before,.mini-cell.checked::after{
  content:"";position:absolute;top:50%;left:50%;
- width:88%;height:9px;background:rgba(0,255,80,.85);border-radius:999px;
+ width:82%;height:4px;background:rgba(0,255,80,.7);border-radius:999px;
 }
 .mini-cell.checked::before{transform:translate(-50%,-50%) rotate(45deg)}
 .mini-cell.checked::after{transform:translate(-50%,-50%) rotate(-45deg)}
@@ -95,20 +94,21 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
 .modal-close:hover { color:#ff9800; }
 
 /* Win Highlights */
-.win-overlay, .global-win-overlay {
-  position: absolute;
-  pointer-events: none;
-  border-radius: 8px;
-}
 .win-overlay {
+  position: absolute;
   background: rgba(0, 255, 80, 0.28);
   box-shadow: 0 0 30px rgba(0, 255, 80, 0.75);
+  pointer-events: none;
   z-index: 5;
+  border-radius: 8px;
 }
 .global-win-overlay {
-  background: rgba(220, 20, 60, 0.55);
-  box-shadow: 0 0 40px rgba(220, 20, 60, 0.9);
-  z-index: 6;
+  position: absolute;
+  background: rgba(349, 99, 49, 0.2);
+  box-shadow: 0 0 4px rgba(349, 99, 49, 0.6);
+  pointer-events: none;
+  z-index: 3;
+  border-radius: 8px;
 }
 </style>
 </head>
@@ -118,7 +118,6 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
 <button onclick="showTab('public')">Overzicht Kaarten</button>
 <button onclick="showTab('editor')">Bingo Kaart Editor</button>
 <button onclick="showTab('saved')">Opgeslagen Kaarten (Staff)</button>
-<button onclick="showSettings()" class="btn-supabase">⚙️ Supabase</button>
 </div>
 
 <!-- Openbaar overzicht -->
@@ -139,6 +138,7 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
 <button class="btn-screenshot" onclick="takeScreenshot()">📷 Screenshot</button>
 <button onclick="newCard()">Nieuwe kaart</button>
 </div>
+
 <div class="bingo-board">
 <div id="teamOverlay" class="team-overlay"></div>
 <div class="grid" id="grid"></div>
@@ -154,7 +154,7 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
 <!-- Preview Modal -->
 <div id="previewModal" class="preview-modal" onclick="closePreview(event)">
  <div class="modal-content" onclick="event.stopPropagation()">
-   <button class="modal-close" onclick="closePreview(null)">×</button>
+   <button class="modal-close" onclick="closePreview(null)">&times;</button>
    <div class="bingo-board">
      <div id="previewTeamOverlay" class="team-overlay"></div>
      <div id="previewGrid" class="grid"></div>
@@ -162,58 +162,17 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
  </div>
 </div>
 
-<!-- Supabase Settings -->
-<div id="settingsModal" class="preview-modal" onclick="if(event.target.id==='settingsModal')closeSettings()">
- <div class="modal-content" onclick="event.stopPropagation()" style="max-width:520px;">
-   <button class="modal-close" onclick="closeSettings()">×</button>
-   <h2>Supabase Instellingen</h2>
-   <p>URL:</p>
-   <input id="supabaseUrl" value="https://fjzwtjgtmlrcwiytpyqw.supabase.co" style="width:100%;margin-bottom:10px;">
-   <p>Anon Key:</p>
-   <input id="supabaseKey" type="password" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqend0amd0bWxyY3dpeXRweXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1OTE1ODIsImV4cCI6MjA5NjE2NzU4Mn0.ne13FbGpwDq-qINjCCFBsM6EZgJeJK3LjxxEGM8Qw9M" style="width:100%;margin-bottom:15px;">
-   <button onclick="saveConfig()">💾 Opslaan</button>
- </div>
-</div>
-
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const PASSWORD = "1337";
 let editUnlocked = false;
-let supabaseClient = null;
-
-const SUPABASE_URL = "https://fjzwtjgtmlrcwiytpyqw.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqend0amd0bWxyY3dpeXRweXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1OTE1ODIsImV4cCI6MjA5NjE2NzU4Mn0.ne13FbGpwDq-qINjCCFBsM6EZgJeJK3LjxxEGM8Qw9M";
-
-function initSupabase() {
-  try {
-    supabaseClient = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    return true;
-  } catch(e) {
-    console.error(e);
-    return false;
-  }
-}
 
 document.addEventListener("DOMContentLoaded", () => {
-  initSupabase();
   loadPublicCards();
   buildEditorGrid();
   buildPreviewGrid();
 });
 
-function showSettings() {
-  document.getElementById('settingsModal').classList.add('active');
-}
-function closeSettings() {
-  document.getElementById('settingsModal').classList.remove('active');
-}
-function saveConfig() {
-  alert("✅ Supabase configuratie is al ingesteld.");
-  closeSettings();
-}
-
-// === Basis functies ===
 function unlockEdit(){
  if(editUnlocked) return true;
  const p = prompt("Voer beheerderscode in:");
@@ -234,20 +193,38 @@ function updateTeamOverlay() {
  document.getElementById('teamOverlay').innerText = name;
 }
 
-// === Win Highlights ===
-function getGlobalWins(cards) {
+// GLOBAL WINS + overige functies blijven hetzelfde als vorige versie
+function getGlobalWins() {
   const rowWins = new Set();
   const colWins = new Set();
-  cards.forEach(data => {
+  Object.keys(localStorage).filter(k => k.startsWith('bingo_')).forEach(key => {
+    const data = JSON.parse(localStorage.getItem(key) || '{}');
     const checked = new Array(16).fill(false);
     (data.checked || []).forEach(i => checked[i] = true);
-    for(let r = 0; r < 4; r++) if(checked.slice(r*4, r*4+4).every(Boolean)) rowWins.add(r);
-    for(let c = 0; c < 4; c++) if([0,1,2,3].every(r => checked[r*4 + c])) colWins.add(c);
+    for(let r = 0; r < 4; r++) {
+      if(checked.slice(r*4, r*4 + 4).every(Boolean)) rowWins.add(r);
+    }
+    for(let c = 0; c < 4; c++) {
+      if([0,1,2,3].every(r => checked[r*4 + c])) colWins.add(c);
+    }
   });
   return { rowWins: Array.from(rowWins), colWins: Array.from(colWins) };
 }
 
-function createWinOverlay(container, type, index, className) {
+function updateWinHighlights() {
+  const checked = Array.from(document.querySelectorAll('#grid .cell')).map(c => c.classList.contains('checked'));
+  const container = document.getElementById('grid');
+  document.querySelectorAll('#grid .win-overlay').forEach(el => el.remove());
+
+  for(let row = 0; row < 4; row++) {
+    if(checked.slice(row*4, row*4+4).every(v => v)) createWinOverlay(container, 'row', row, 'win-overlay');
+  }
+  for(let col = 0; col < 4; col++) {
+    if([0,1,2,3].every(r => checked[r*4 + col])) createWinOverlay(container, 'col', col, 'win-overlay');
+  }
+}
+
+function createWinOverlay(container, type, index, className = 'win-overlay') {
   const overlay = document.createElement('div');
   overlay.className = className;
   if(type === 'row') {
@@ -264,7 +241,6 @@ function createWinOverlay(container, type, index, className) {
   container.appendChild(overlay);
 }
 
-// === Grids ===
 function buildEditorGrid() {
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
@@ -290,150 +266,229 @@ function buildPreviewGrid() {
   }
 }
 
-function updateWinHighlights() {
-  const checked = Array.from(document.querySelectorAll('#grid .cell')).map(c => c.classList.contains('checked'));
-  const container = document.getElementById('grid');
-  document.querySelectorAll('#grid .win-overlay').forEach(el => el.remove());
+function loadPublicCards(){
+  const container = document.getElementById('publicCardsContainer');
+  container.innerHTML = '';
+ 
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('bingo_'));
+  const global = getGlobalWins();
 
-  for(let row = 0; row < 4; row++) {
-    if(checked.slice(row*4, row*4+4).every(v => v)) createWinOverlay(container, 'row', row, 'win-overlay');
+  if(keys.length === 0) {
+    container.innerHTML = '<p style="grid-column: 1/-1; color: #aaa;">Nog geen bingokaarten opgeslagen.</p>';
+    return;
   }
-  for(let col = 0; col < 4; col++) {
-    if([0,1,2,3].every(r => checked[r*4 + col])) createWinOverlay(container, 'col', col, 'win-overlay');
-  }
+ 
+  keys.forEach(key => {
+    const data = JSON.parse(localStorage.getItem(key));
+    const cardDiv = document.createElement('div');
+    cardDiv.className = 'public-card';
+    cardDiv.dataset.team = data.team;
+
+    cardDiv.innerHTML = `
+      <h3>${data.team}</h3>
+      <div class="mini-board">
+        <div class="mini-grid"></div>
+      </div>
+      <button class="btn-preview">Bekijken</button>
+    `;
+   
+    const miniGrid = cardDiv.querySelector('.mini-grid');
+   
+    for(let i = 0; i < 16; i++) {
+      const miniCell = document.createElement('div');
+      miniCell.className = 'mini-cell';
+      if(data.checked.includes(i)) miniCell.classList.add('checked');
+      miniGrid.appendChild(miniCell);
+    }
+   
+    global.rowWins.forEach(row => {
+      const overlay = document.createElement('div');
+      overlay.className = 'global-win-overlay';
+      overlay.style.top = `${row * 25}%`;
+      overlay.style.left = '0%';
+      overlay.style.width = '100%';
+      overlay.style.height = '25%';
+      miniGrid.appendChild(overlay);
+    });
+   
+    global.colWins.forEach(col => {
+      const overlay = document.createElement('div');
+      overlay.className = 'global-win-overlay';
+      overlay.style.top = '0%';
+      overlay.style.left = `${col * 25}%`;
+      overlay.style.width = '25%';
+      overlay.style.height = '100%';
+      miniGrid.appendChild(overlay);
+    });
+   
+    cardDiv.querySelector('.btn-preview').addEventListener('click', () => openPreview(data.team));
+   
+    container.appendChild(cardDiv);
+  });
 }
 
-// === Supabase functies ===
-async function saveCard(){
+function openPreview(teamName) {
+  const data = JSON.parse(localStorage.getItem('bingo_' + teamName));
+  if(!data) return;
+ 
+  document.getElementById('previewTeamOverlay').innerText = data.team;
+ 
+  const previewCells = document.querySelectorAll('#previewGrid .cell');
+  previewCells.forEach((cell, i) => cell.classList.toggle('checked', data.checked.includes(i)));
+ 
+  const previewGrid = document.getElementById('previewGrid');
+  document.querySelectorAll('#previewGrid .win-overlay, #previewGrid .global-win-overlay').forEach(el => el.remove());
+ 
+  const global = getGlobalWins();
+  global.rowWins.forEach(r => createWinOverlay(previewGrid, 'row', r, 'global-win-overlay'));
+  global.colWins.forEach(c => createWinOverlay(previewGrid, 'col', c, 'global-win-overlay'));
+ 
+  document.getElementById('previewModal').classList.add('active');
+}
+
+// Screenshot alle kaarten
+async function takeAllCardsScreenshot() {
+  const tempContainer = document.createElement('div');
+  tempContainer.style.position = 'absolute';
+  tempContainer.style.left = '-9999px';
+  tempContainer.style.background = '#111';
+  tempContainer.style.padding = '40px';
+  tempContainer.style.width = '820px';
+  document.body.appendChild(tempContainer);
+
+  const title = document.createElement('h2');
+  title.textContent = '🌴 Jungle Bingo - Alle Kaarten';
+  title.style.color = '#fff';
+  title.style.textAlign = 'center';
+  title.style.marginBottom = '40px';
+  tempContainer.appendChild(title);
+
+  document.querySelectorAll('.public-card').forEach(card => {
+    const clone = card.cloneNode(true);
+    clone.style.marginBottom = '50px';
+    clone.style.boxShadow = '0 15px 35px rgba(0,0,0,0.7)';
+    tempContainer.appendChild(clone);
+  });
+
+  try {
+    const canvas = await html2canvas(tempContainer, { scale: 2, backgroundColor: '#111' });
+    const link = document.createElement('a');
+    link.download = `Jungle_Bingo_Alle_Kaarten_${new Date().toISOString().slice(0,10)}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch(e) {
+    alert('Screenshot maken mislukt.');
+  }
+
+  document.body.removeChild(tempContainer);
+}
+
+// Overige functies (save, edit, delete, screenshot)
+function saveCard(){
   const team = document.getElementById('teamName').value.trim();
   if(!team) return alert('Voer een teamnaam in');
-  
   const checked = [];
   document.querySelectorAll('#grid .cell').forEach((c,i) => {
     if(c.classList.contains('checked')) checked.push(i);
   });
-
-  try {
-    const { error } = await supabaseClient.from('bingo_cards').upsert({
-      team, 
-      checked, 
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'team' });
-    if(error) throw error;
-    alert('✅ Opgeslagen in Supabase!');
-  } catch(e) {
-    alert('Fout: ' + e.message);
-  }
+  localStorage.setItem('bingo_' + team, JSON.stringify({team, checked}));
+  alert('Kaart opgeslagen!');
   loadSavedCards();
   loadPublicCards();
 }
 
-async function loadPublicCards(){
-  const container = document.getElementById('publicCardsContainer');
-  container.innerHTML = '';
-
-  try {
-    const { data: cards, error } = await supabaseClient.from('bingo_cards').select('*').order('team');
-    if(error) throw error;
-
-    if(!cards || cards.length === 0) {
-      container.innerHTML = '<p style="grid-column: 1/-1; color: #aaa;">Nog geen bingokaarten opgeslagen.</p>';
-      return;
-    }
-
-    const global = getGlobalWins(cards);
-
-    cards.forEach(data => {
-      const cardDiv = document.createElement('div');
-      cardDiv.className = 'public-card';
-      cardDiv.innerHTML = `
-        <h3>${data.team}</h3>
-        <div class="mini-board"><div class="mini-grid"></div></div>
-        <button class="btn-preview">Bekijken</button>
-      `;
-
-      const miniGrid = cardDiv.querySelector('.mini-grid');
-      for(let i = 0; i < 16; i++) {
-        const miniCell = document.createElement('div');
-        miniCell.className = 'mini-cell';
-        if((data.checked || []).includes(i)) miniCell.classList.add('checked');
-        miniGrid.appendChild(miniCell);
-      }
-
-      global.rowWins.forEach(row => {
-        const o = document.createElement('div');
-        o.className = 'global-win-overlay';
-        o.style.top = `${row*25}%`; o.style.left = '0'; o.style.width = '100%'; o.style.height = '25%';
-        miniGrid.appendChild(o);
-      });
-      global.colWins.forEach(col => {
-        const o = document.createElement('div');
-        o.className = 'global-win-overlay';
-        o.style.top = '0'; o.style.left = `${col*25}%`; o.style.width = '25%'; o.style.height = '100%';
-        miniGrid.appendChild(o);
-      });
-
-      cardDiv.querySelector('.btn-preview').addEventListener('click', () => openPreview(data.team));
-      container.appendChild(cardDiv);
-    });
-  } catch(e) {
-    container.innerHTML = `<p style="color:red;">Fout bij laden: ${e.message}</p>`;
-  }
-}
-
-async function openPreview(teamName) {
-  try {
-    const { data } = await supabaseClient.from('bingo_cards').select('*').eq('team', teamName).single();
-    if(!data) return;
-
-    document.getElementById('previewTeamOverlay').innerText = data.team;
-    const cells = document.querySelectorAll('#previewGrid .cell');
-    cells.forEach((cell, i) => cell.classList.toggle('checked', data.checked.includes(i)));
-
-    const previewGrid = document.getElementById('previewGrid');
-    document.querySelectorAll('#previewGrid .win-overlay, #previewGrid .global-win-overlay').forEach(el => el.remove());
-
-    const global = getGlobalWins([data]);
-    global.rowWins.forEach(r => createWinOverlay(previewGrid, 'row', r, 'global-win-overlay'));
-    global.colWins.forEach(c => createWinOverlay(previewGrid, 'col', c, 'global-win-overlay'));
-
-    document.getElementById('previewModal').classList.add('active');
-  } catch(e) { console.error(e); }
-}
-
-// Overige functies
-function newCard(){ /* ... */ 
+function newCard(){
   document.getElementById('teamName').value = '';
   updateTeamOverlay();
   document.querySelectorAll('#grid .cell').forEach(c => c.classList.remove('checked'));
   updateWinHighlights();
 }
 
-function loadSavedCards(){ /* ... */ 
-  // kan later uitgebreid worden met Supabase
+function loadSavedCards(){
   const container = document.getElementById('savedCards');
-  container.innerHTML = '<p>Beheer via Supabase (binnenkort uitbreiden)</p>';
+  container.innerHTML = '';
+  Object.keys(localStorage).filter(k => k.startsWith('bingo_')).forEach(key => {
+    const data = JSON.parse(localStorage.getItem(key));
+    const row = document.createElement('div');
+    row.className = 'card-item';
+    row.innerHTML = `<span>${data.team}</span>
+    <span>
+      <button onclick="editCard('${data.team.replace(/'/g, "\\'")}')">Bewerken</button>
+      <button onclick="deleteCard('${data.team.replace(/'/g, "\\'")}')">Verwijderen</button>
+    </span>`;
+    container.appendChild(row);
+  });
 }
 
-function editCard(team){ /* ... */ 
-  alert("Edit via Supabase nog in ontwikkeling. Gebruik de editor handmatig.");
+function editCard(team){
+  if(!unlockEdit()) return;
+  const data = JSON.parse(localStorage.getItem('bingo_'+team));
+  showTab('editor');
+  newCard();
+  document.getElementById('teamName').value = data.team;
+  updateTeamOverlay();
+  data.checked.forEach(i => document.querySelectorAll('#grid .cell')[i].classList.add('checked'));
+  updateWinHighlights();
 }
 
-function deleteCard(team){ /* ... */ 
-  if(confirm('Verwijderen?')) {
-    supabaseClient.from('bingo_cards').delete().eq('team', team).then(() => {
-      loadPublicCards();
-    });
+function deleteCard(team){
+  if(!unlockEdit()) return;
+  if(confirm('Kaart verwijderen?')){
+    localStorage.removeItem('bingo_'+team);
+    loadSavedCards();
+    loadPublicCards();
   }
 }
 
-function takeAllCardsScreenshot(){ /*zelfde als voorheen*/ 
-  // (kopieer uit vorige versie indien nodig)
-  alert("Screenshot functie werkt nog met huidige kaarten.");
-}
-
-function takeScreenshot(){ /*zelfde als voorheen*/ 
-  alert("Screenshot van huidige kaart werkt.");
+function takeScreenshot() {
+  const teamName = document.getElementById('teamName').value.trim() || "Jungle Bingo";
+  const checked = [];
+  document.querySelectorAll('#grid .cell').forEach((c,i) => {
+    if(c.classList.contains('checked')) checked.push(i);
+  });
+  
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = './bingo templateV1.png';
+  img.onload = function() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = img.width; canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+   
+    ctx.font = "bold 48px Copperplate";
+    ctx.fillStyle = "#f5d76e";
+    ctx.shadowColor = "rgba(0,0,0,0.9)";
+    ctx.shadowBlur = 8; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 4;
+    ctx.textAlign = "center";
+    ctx.fillText(teamName.toUpperCase(), canvas.width / 2, canvas.height * 0.085);
+   
+    ctx.shadowBlur = 0;
+    const gridTop = canvas.height * 0.12;
+    const gridLeft = canvas.width * 0.115;
+    const gridSize = canvas.width * 0.77;
+    const cellSize = gridSize / 4;
+   
+    checked.forEach(index => {
+      const row = Math.floor(index / 4);
+      const col = index % 4;
+      const centerX = gridLeft + (col * cellSize) + (cellSize / 2);
+      const centerY = gridTop + (row * cellSize) + (cellSize / 2);
+      const lineLength = cellSize * 0.4;
+     
+      ctx.strokeStyle = "rgba(0, 255, 80, 0.55)";
+      ctx.lineWidth = 18;
+      ctx.lineCap = "round";
+     
+      ctx.beginPath(); ctx.moveTo(centerX - lineLength, centerY - lineLength); ctx.lineTo(centerX + lineLength, centerY + lineLength); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(centerX - lineLength, centerY + lineLength); ctx.lineTo(centerX + lineLength, centerY - lineLength); ctx.stroke();
+    });
+   
+    const link = document.createElement('a');
+    link.download = `Bingo_${teamName.replace(/[^a-z0-9]/gi, '_')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
 }
 
 function closePreview(event) {
