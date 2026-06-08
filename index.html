@@ -474,7 +474,7 @@ async function takeAllCardsScreenshot() {
   document.body.appendChild(tempContainer);
 
   const title = document.createElement('h2');
-  title.textContent = '🌴 Jungle Bingo - Alle Kaarten';
+  title.textContent = '-MGBingo - Tussenstand alle Kaarten';
   title.style.color = '#fff';
   title.style.textAlign = 'center';
   title.style.marginBottom = '40px';
@@ -490,7 +490,7 @@ async function takeAllCardsScreenshot() {
   try {
     const canvas = await html2canvas(tempContainer, { scale: 2, backgroundColor: '#111' });
     const link = document.createElement('a');
-    link.download = `Jungle_Bingo_Alle_Kaarten_${new Date().toISOString().slice(0,10)}.png`;
+    link.download = `Massief_Goud_Bingo_Tussenstand_Kaarten_${new Date().toISOString().slice(0,10)}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   } catch(e) {
@@ -583,7 +583,7 @@ function takeScreenshot() {
     const checkedArray = new Array(16).fill(false);
     checked.forEach(i => checkedArray[i] = true);
     
-    ctx.fillStyle = "rgba(255, 140, 0, 0.25)";
+    ctx.fillStyle = "rgba(255, 140, 0, 0.4)";
     ctx.shadowColor = "rgba(255, 140, 0, 0.8)";
     ctx.shadowBlur = 15;
     
