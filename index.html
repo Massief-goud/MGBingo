@@ -174,10 +174,10 @@ let supabaseClient = null;
 async function initSupabase() {
   try {
     supabaseClient = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log("✅ Supabase verbonden");
+    console.log("✅ Supabase client succesvol geïnitialiseerd");
     return true;
   } catch (e) {
-    console.error("Supabase fout:", e);
+    console.error("❌ Supabase initialisatie mislukt:", e);
     return false;
   }
 }
@@ -213,7 +213,7 @@ function updateTeamOverlay() {
  document.getElementById('teamOverlay').innerText = name;
 }
 
-// ==================== WIN HIGHLIGHTS ====================
+// Win Highlights
 function getGlobalWins(cards) {
   const rowWins = new Set();
   const colWins = new Set();
@@ -243,7 +243,7 @@ function createWinOverlay(container, type, index, className) {
   container.appendChild(overlay);
 }
 
-// ==================== GRIDS ====================
+// Grids
 function buildEditorGrid() {
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
@@ -292,14 +292,20 @@ async function saveCard(){
     if(c.classList.contains('checked')) checked.push(i);
   });
 
+  if (!supabaseClient) {
+    alert("❌ Supabase niet verbonden. Herlaad de pagina.");
+    return;
+  }
+
   try {
     const { error } = await supabaseClient
       .from('bingo_cards')
       .upsert({ team, checked, updated_at: new Date().toISOString() }, { onConflict: 'team' });
     
     if(error) throw error;
-    alert('✅ Kaart opgeslagen in Supabase!');
+    alert('✅ Kaart succesvol opgeslagen in Supabase!');
   } catch(e) {
+    console.error(e);
     alert('❌ Fout bij opslaan: ' + e.message);
   }
   
@@ -310,6 +316,11 @@ async function saveCard(){
 async function loadPublicCards(){
   const container = document.getElementById('publicCardsContainer');
   container.innerHTML = '';
+
+  if (!supabaseClient) {
+    container.innerHTML = '<p style="color:red;">Supabase niet verbonden. Herlaad de pagina.</p>';
+    return;
+  }
 
   try {
     const { data: cards, error } = await supabaseClient
@@ -347,16 +358,20 @@ async function loadPublicCards(){
       global.rowWins.forEach(row => {
         const overlay = document.createElement('div');
         overlay.className = 'global-win-overlay';
-        overlay.style.top = `${row * 25}%`; overlay.style.left = '0%';
-        overlay.style.width = '100%'; overlay.style.height = '25%';
+        overlay.style.top = `${row * 25}%`;
+        overlay.style.left = '0%';
+        overlay.style.width = '100%';
+        overlay.style.height = '25%';
         miniGrid.appendChild(overlay);
       });
 
       global.colWins.forEach(col => {
         const overlay = document.createElement('div');
         overlay.className = 'global-win-overlay';
-        overlay.style.top = '0%'; overlay.style.left = `${col * 25}%`;
-        overlay.style.width = '25%'; overlay.style.height = '100%';
+        overlay.style.top = '0%';
+        overlay.style.left = `${col * 25}%`;
+        overlay.style.width = '25%';
+        overlay.style.height = '100%';
         miniGrid.appendChild(overlay);
       });
 
@@ -364,11 +379,13 @@ async function loadPublicCards(){
       container.appendChild(cardDiv);
     });
   } catch(e) {
+    console.error(e);
     container.innerHTML = `<p style="color:red;">Fout bij laden: ${e.message}</p>`;
   }
 }
 
 async function openPreview(teamName) {
+  if (!supabaseClient) return;
   try {
     const { data } = await supabaseClient.from('bingo_cards').select('*').eq('team', teamName).single();
     if(!data) return;
@@ -398,11 +415,11 @@ function newCard(){
 
 function loadSavedCards(){
   const container = document.getElementById('savedCards');
-  container.innerHTML = '<p style="color:#aaa;">Alle kaarten worden centraal in Supabase opgeslagen.</p>';
+  container.innerHTML = '<p style="color:#aaa;">Kaarten worden opgeslagen in Supabase.</p>';
 }
 
 function editCard(team){
-  alert("Gebruik de Editor om kaarten te bewerken.");
+  alert("Gebruik de Editor om een kaart te bewerken.");
 }
 
 function deleteCard(team){
@@ -413,13 +430,11 @@ function deleteCard(team){
 }
 
 function takeAllCardsScreenshot() {
-  alert("Screenshot van alle kaarten wordt voorbereid...");
-  // Je kunt hier de oude functie plakken als je wilt
+  alert("Screenshot functie is nog lokaal (kan later uitgebreid worden).");
 }
 
 function takeScreenshot() {
-  alert("Screenshot huidige kaart wordt gemaakt...");
-  // oude functie kan hier
+  alert("Screenshot huidige kaart werkt nog via canvas.");
 }
 
 function closePreview(event) {
