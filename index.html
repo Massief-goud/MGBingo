@@ -361,6 +361,35 @@ async function loadPublicCards(){
      if(card.checked && card.checked.includes(i)) miniCell.classList.add('checked');
      miniGrid.appendChild(miniCell);
    }
+   
+   // Voeg win-overlays toe voor volledige rijen/kolommen
+   const checked = new Array(16).fill(false);
+   (card.checked || []).forEach(i => checked[i] = true);
+   
+   for(let row = 0; row < 4; row++) {
+     if(checked.slice(row*4, row*4 + 4).every(Boolean)) {
+       const overlay = document.createElement('div');
+       overlay.className = 'global-win-overlay';
+       overlay.style.top = `${row * 25}%`;
+       overlay.style.left = '0%';
+       overlay.style.width = '100%';
+       overlay.style.height = '25%';
+       miniGrid.appendChild(overlay);
+     }
+   }
+   
+   for(let col = 0; col < 4; col++) {
+     if([0,1,2,3].every(r => checked[r*4 + col])) {
+       const overlay = document.createElement('div');
+       overlay.className = 'global-win-overlay';
+       overlay.style.top = '0%';
+       overlay.style.left = `${col * 25}%`;
+       overlay.style.width = '25%';
+       overlay.style.height = '100%';
+       miniGrid.appendChild(overlay);
+     }
+   }
+   
    container.appendChild(cardDiv);
  });
 }
@@ -533,7 +562,8 @@ function takeScreenshot() {
     const gridLeft = canvas.width * 0.115;
     const gridSize = canvas.width * 0.77;
     const cellSize = gridSize / 4;
-   
+    
+    // Teken X'en voor gemarkeerde cellen
     checked.forEach(index => {
       const row = Math.floor(index / 4);
       const col = index % 4;
@@ -548,6 +578,38 @@ function takeScreenshot() {
       ctx.beginPath(); ctx.moveTo(centerX - lineLength, centerY - lineLength); ctx.lineTo(centerX + lineLength, centerY + lineLength); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(centerX - lineLength, centerY + lineLength); ctx.lineTo(centerX + lineLength, centerY - lineLength); ctx.stroke();
     });
+    
+    // Teken win-highlights voor volledige rijen/kolommen
+    const checkedArray = new Array(16).fill(false);
+    checked.forEach(i => checkedArray[i] = true);
+    
+    ctx.fillStyle = "rgba(255, 140, 0, 0.25)";
+    ctx.shadowColor = "rgba(255, 140, 0, 0.8)";
+    ctx.shadowBlur = 15;
+    
+    for(let row = 0; row < 4; row++) {
+      if(checkedArray.slice(row*4, row*4 + 4).every(Boolean)) {
+        const y = gridTop + (row * cellSize);
+        ctx.fillRect(gridLeft, y, gridSize, cellSize);
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "rgba(255, 140, 0, 0.9)";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(gridLeft, y, gridSize, cellSize);
+        ctx.shadowBlur = 15;
+      }
+    }
+    
+    for(let col = 0; col < 4; col++) {
+      if([0,1,2,3].every(r => checkedArray[r*4 + col])) {
+        const x = gridLeft + (col * cellSize);
+        ctx.fillRect(x, gridTop, cellSize, gridSize);
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "rgba(255, 140, 0, 0.9)";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, gridTop, cellSize, gridSize);
+        ctx.shadowBlur = 15;
+      }
+    }
    
     const link = document.createElement('a');
     link.download = `Bingo_${teamName.replace(/[^a-z0-9]/gi, '_')}.png`;
