@@ -165,6 +165,7 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
  </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script>
 const PASSWORD_HASH = "10f177ad50c7716e10575b29a9dd99705e463b1dbdb5f0c0655377903ec4c6d7";
@@ -221,21 +222,31 @@ function updateTeamOverlay() {
 }
 
 // GLOBAL WINS + overige functies blijven hetzelfde als vorige versie
+let bingoCards = [];
+const SUPABASE_URL = "https://fjzwtjgtmlrcwiytpyqw.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqend0amd0bWxyY3dpeXRweXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1OTE1ODIsImV4cCI6MjA5NjE2NzU4Mn0.ne13FbGpwDq-qINjCCFBsM6EZgJeJK3LjxxEGM8Qw9M";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function refreshCards() {
+  const { data, error } = await supabaseClient.from('bingo_cards').select('team, checked').order('team');
+  if (error) {
+    console.error('Supabase kaarten ophalen mislukt:', error);
+    alert('Kaarten laden mislukt. Controleer de Supabase-tabel en toegangsregels.');
+    return false;
+  }
+  bingoCards = (data || []).map(card => ({team: card.team, checked: Array.isArray(card.checked) ? card.checked : []}));
+  return true;
+}
+function getCard(team) { return bingoCards.find(card => card.team === team) || null; }
 function getGlobalWins() {
-  const rowWins = new Set();
-  const colWins = new Set();
-  Object.keys(localStorage).filter(k => k.startsWith('bingo_')).forEach(key => {
-    const data = JSON.parse(localStorage.getItem(key) || '{}');
+  const rowWins = new Set(), colWins = new Set();
+  bingoCards.forEach(data => {
     const checked = new Array(25).fill(false);
     (data.checked || []).forEach(i => checked[i] = true);
-    for(let r = 0; r < 5; r++) {
-      if(checked.slice(r*5, r*5 + 5).every(Boolean)) rowWins.add(r);
-    }
-    for(let c = 0; c < 5; c++) {
-      if([0,1,2,3,4].every(r => checked[r*5 + c])) colWins.add(c);
-    }
+    for(let r=0;r<5;r++) if(checked.slice(r*5,r*5+5).every(Boolean)) rowWins.add(r);
+    for(let c=0;c<5;c++) if([0,1,2,3,4].every(r => checked[r*5+c])) colWins.add(c);
   });
-  return { rowWins: Array.from(rowWins), colWins: Array.from(colWins) };
+  return {rowWins:Array.from(rowWins), colWins:Array.from(colWins)};
 }
 
 function updateWinHighlights() {
@@ -293,69 +304,32 @@ function buildPreviewGrid() {
   }
 }
 
-function loadPublicCards(){
+async function loadPublicCards(){
   const container = document.getElementById('publicCardsContainer');
+  container.innerHTML = '<p>Kaarten laden...</p>';
+  if (!(await refreshCards())) return;
   container.innerHTML = '';
- 
-  const keys = Object.keys(localStorage).filter(k => k.startsWith('bingo_'));
   const global = getGlobalWins();
-
-  if(keys.length === 0) {
+  if(!bingoCards.length) {
     container.innerHTML = '<p style="grid-column: 1/-1; color: #aaa;">Nog geen bingokaarten opgeslagen.</p>';
     return;
   }
- 
-  keys.forEach(key => {
-    const data = JSON.parse(localStorage.getItem(key));
-    const cardDiv = document.createElement('div');
-    cardDiv.className = 'public-card';
-    cardDiv.dataset.team = data.team;
-
-    cardDiv.innerHTML = `
-      <h3>${data.team}</h3>
-      <div class="mini-board">
-        <div class="mini-grid"></div>
-      </div>
-      <button class="btn-preview">Bekijken</button>
-    `;
-   
-    const miniGrid = cardDiv.querySelector('.mini-grid');
-   
-    for(let i = 0; i < 25; i++) {
-      const miniCell = document.createElement('div');
-      miniCell.className = 'mini-cell';
-      if(data.checked.includes(i)) miniCell.classList.add('checked');
-      miniGrid.appendChild(miniCell);
-    }
-   
-    global.rowWins.forEach(row => {
-      const overlay = document.createElement('div');
-      overlay.className = 'global-win-overlay';
-      overlay.style.top = `${row * 20}%`;
-      overlay.style.left = '0%';
-      overlay.style.width = '100%';
-      overlay.style.height = '20%';
-      miniGrid.appendChild(overlay);
-    });
-   
-    global.colWins.forEach(col => {
-      const overlay = document.createElement('div');
-      overlay.className = 'global-win-overlay';
-      overlay.style.top = '0%';
-      overlay.style.left = `${col * 20}%`;
-      overlay.style.width = '20%';
-      overlay.style.height = '100%';
-      miniGrid.appendChild(overlay);
-    });
-   
-    cardDiv.querySelector('.btn-preview').addEventListener('click', () => openPreview(data.team));
-   
+  bingoCards.forEach(data => {
+    const cardDiv = document.createElement('div'); cardDiv.className = 'public-card';
+    const heading = document.createElement('h3'); heading.textContent = data.team; cardDiv.appendChild(heading);
+    const board = document.createElement('div'); board.className = 'mini-board';
+    const miniGrid = document.createElement('div'); miniGrid.className = 'mini-grid'; board.appendChild(miniGrid); cardDiv.appendChild(board);
+    const previewButton = document.createElement('button'); previewButton.className = 'btn-preview'; previewButton.textContent = 'Bekijken';
+    previewButton.addEventListener('click', () => openPreview(data.team)); cardDiv.appendChild(previewButton);
+    for(let i=0;i<25;i++) { const cell=document.createElement('div'); cell.className='mini-cell'; if(data.checked.includes(i)) cell.classList.add('checked'); miniGrid.appendChild(cell); }
+    global.rowWins.forEach(row => { const el=document.createElement('div'); el.className='global-win-overlay'; el.style.top=`${row*20}%`; el.style.left='0%'; el.style.width='100%'; el.style.height='20%'; miniGrid.appendChild(el); });
+    global.colWins.forEach(col => { const el=document.createElement('div'); el.className='global-win-overlay'; el.style.top='0%'; el.style.left=`${col*20}%`; el.style.width='20%'; el.style.height='100%'; miniGrid.appendChild(el); });
     container.appendChild(cardDiv);
   });
 }
 
 function openPreview(teamName) {
-  const data = JSON.parse(localStorage.getItem('bingo_' + teamName));
+  const data = getCard(teamName);
   if(!data) return;
  
   document.getElementById('previewTeamOverlay').innerText = data.team;
@@ -411,17 +385,15 @@ async function takeAllCardsScreenshot() {
 }
 
 // Overige functies (save, edit, delete, screenshot)
-function saveCard(){
+async function saveCard(){
+  if(!unlockEdit()) return;
   const team = document.getElementById('teamName').value.trim();
   if(!team) return alert('Voer een teamnaam in');
-  const checked = [];
-  document.querySelectorAll('#grid .cell').forEach((c,i) => {
-    if(c.classList.contains('checked')) checked.push(i);
-  });
-  localStorage.setItem('bingo_' + team, JSON.stringify({team, checked}));
-  alert('Kaart opgeslagen!');
-  loadSavedCards();
-  loadPublicCards();
+  const checked=[];
+  document.querySelectorAll('#grid .cell').forEach((c,i)=>{if(c.classList.contains('checked')) checked.push(i);});
+  const {error}=await supabaseClient.from('bingo_cards').upsert({team,checked},{onConflict:'team'});
+  if(error){console.error(error);alert('Kaart opslaan mislukt. Controleer de Supabase-tabel en toegangsregels.');return;}
+  await refreshCards(); alert('Kaart opgeslagen!'); await loadSavedCards(); await loadPublicCards();
 }
 
 function newCard(){
@@ -431,25 +403,23 @@ function newCard(){
   updateWinHighlights();
 }
 
-function loadSavedCards(){
-  const container = document.getElementById('savedCards');
-  container.innerHTML = '';
-  Object.keys(localStorage).filter(k => k.startsWith('bingo_')).forEach(key => {
-    const data = JSON.parse(localStorage.getItem(key));
-    const row = document.createElement('div');
-    row.className = 'card-item';
-    row.innerHTML = `<span>${data.team}</span>
-    <span>
-      <button onclick="editCard('${data.team.replace(/'/g, "\\'")}')">Bewerken</button>
-      <button onclick="deleteCard('${data.team.replace(/'/g, "\\'")}')">Verwijderen</button>
-    </span>`;
-    container.appendChild(row);
+async function loadSavedCards(){
+  const container=document.getElementById('savedCards'); container.innerHTML='<p>Kaarten laden...</p>';
+  if(!(await refreshCards())) return;
+  container.innerHTML='';
+  bingoCards.forEach(data=>{
+    const row=document.createElement('div'); row.className='card-item';
+    const label=document.createElement('span'); label.textContent=data.team;
+    const actions=document.createElement('span');
+    const edit=document.createElement('button'); edit.textContent='Bewerken'; edit.addEventListener('click',()=>editCard(data.team));
+    const del=document.createElement('button'); del.textContent='Verwijderen'; del.addEventListener('click',()=>deleteCard(data.team));
+    actions.append(edit,del); row.append(label,actions); container.appendChild(row);
   });
 }
 
 function editCard(team){
   if(!unlockEdit()) return;
-  const data = JSON.parse(localStorage.getItem('bingo_'+team));
+  const data = getCard(team);
   showTab('editor');
   newCard();
   document.getElementById('teamName').value = data.team;
@@ -458,12 +428,12 @@ function editCard(team){
   updateWinHighlights();
 }
 
-function deleteCard(team){
+async function deleteCard(team){
   if(!unlockEdit()) return;
   if(confirm('Kaart verwijderen?')){
-    localStorage.removeItem('bingo_'+team);
-    loadSavedCards();
-    loadPublicCards();
+    const {error}=await supabaseClient.from('bingo_cards').delete().eq('team',team);
+    if(error){console.error(error);alert('Kaart verwijderen mislukt. Controleer de Supabase-toegangsregels.');return;}
+    await refreshCards(); await loadSavedCards(); await loadPublicCards();
   }
 }
 
