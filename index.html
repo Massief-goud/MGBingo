@@ -228,54 +228,68 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function refreshCards() {
-  const { data, error } = await supabaseClient.from('bingo_cards').select('team, checked').order('team');
+  const { data, error } = await supabaseClient
+    .from('bingo_cards')
+    .select('team, checked, line_completed_at, winning_column')
+    .order('team');
   if (error) {
     console.error('Supabase kaarten ophalen mislukt:', error);
-    alert('Kaarten laden mislukt. Controleer de Supabase-tabel en toegangsregels.');
+    alert('Kaarten laden mislukt. Voer eerst de Supabase SQL-aanpassing uit die bij deze versie hoort.');
     return false;
   }
-  bingoCards = (data || []).map(card => ({team: card.team, checked: Array.isArray(card.checked) ? card.checked : []}));
+  bingoCards = (data || []).map(card => ({
+    team: card.team,
+    checked: Array.isArray(card.checked) ? card.checked : [],
+    line_completed_at: card.line_completed_at || null,
+    winning_column: Number.isInteger(card.winning_column) ? card.winning_column : null
+  }));
   return true;
 }
 function getCard(team) { return bingoCards.find(card => card.team === team) || null; }
+
+// Alleen verticale kolommen tellen. De eerste opgeslagen verticale bingo is de winnaar.
+function hasVerticalLine(checkedIndices, column) {
+  const checked = new Set(checkedIndices || []);
+  return [0, 1, 2, 3, 4].every(row => checked.has(row * 5 + column));
+}
+function getWinner() {
+  return bingoCards
+    .filter(card => card.line_completed_at && Number.isInteger(card.winning_column))
+    .sort((a, b) => new Date(a.line_completed_at) - new Date(b.line_completed_at))[0] || null;
+}
 function getGlobalWins() {
-  const rowWins = new Set(), colWins = new Set();
-  bingoCards.forEach(data => {
-    const checked = new Array(25).fill(false);
-    (data.checked || []).forEach(i => checked[i] = true);
-    for(let r=0;r<5;r++) if(checked.slice(r*5,r*5+5).every(Boolean)) rowWins.add(r);
-    for(let c=0;c<5;c++) if([0,1,2,3,4].every(r => checked[r*5+c])) colWins.add(c);
-  });
-  return {rowWins:Array.from(rowWins), colWins:Array.from(colWins)};
+  const winner = getWinner();
+  return { winnerTeam: winner ? winner.team : null, winningColumn: winner ? winner.winning_column : null };
 }
 
 function updateWinHighlights() {
-  const checked = Array.from(document.querySelectorAll('#grid .cell')).map(c => c.classList.contains('checked'));
+  const checked = Array.from(document.querySelectorAll('#grid .cell')).map((c, i) => c.classList.contains('checked') ? i : -1).filter(i => i >= 0);
   const container = document.getElementById('grid');
-  document.querySelectorAll('#grid .win-overlay').forEach(el => el.remove());
+  document.querySelectorAll('#grid .win-overlay, #grid .global-win-overlay').forEach(el => el.remove());
 
-  for(let row = 0; row < 5; row++) {
-    if(checked.slice(row*5, row*5+5).every(v => v)) createWinOverlay(container, 'row', row, 'win-overlay');
+  const winner = getWinner();
+  const currentTeam = document.getElementById('teamName').value.trim();
+  if (winner) {
+    const className = currentTeam === winner.team ? 'win-overlay' : 'global-win-overlay';
+    createWinOverlay(container, 'col', winner.winning_column, className);
+    return;
   }
-  for(let col = 0; col < 5; col++) {
-    if([0,1,2,3,4].every(r => checked[r*5 + col])) createWinOverlay(container, 'col', col, 'win-overlay');
+
+  // Zolang er nog geen winnaar is, worden complete verticale lijnen als kandidaat groen getoond.
+  for (let col = 0; col < 5; col++) {
+    if (hasVerticalLine(checked, col)) createWinOverlay(container, 'col', col, 'win-overlay');
   }
 }
 
 function createWinOverlay(container, type, index, className = 'win-overlay') {
+  // Alleen kolommen van boven naar beneden zijn geldig.
+  if (type !== 'col') return;
   const overlay = document.createElement('div');
   overlay.className = className;
-  if(type === 'row') {
-    overlay.style.top = `${index * 20}%`;
-    overlay.style.left = '0%';
-    overlay.style.width = '100%';
-    overlay.style.height = '20%';
-  } else {
-    overlay.style.top = '0%';
-    overlay.style.left = `${index * 20}%`;
-    overlay.style.width = '20%';
-    overlay.style.height = '100%';
-  }
+  overlay.style.top = '0%';
+  overlay.style.left = `${index * 20}%`;
+  overlay.style.width = '20%';
+  overlay.style.height = '100%';
   container.appendChild(overlay);
 }
 
@@ -322,8 +336,14 @@ async function loadPublicCards(){
     const previewButton = document.createElement('button'); previewButton.className = 'btn-preview'; previewButton.textContent = 'Bekijken';
     previewButton.addEventListener('click', () => openPreview(data.team)); cardDiv.appendChild(previewButton);
     for(let i=0;i<25;i++) { const cell=document.createElement('div'); cell.className='mini-cell'; if(data.checked.includes(i)) cell.classList.add('checked'); miniGrid.appendChild(cell); }
-    global.rowWins.forEach(row => { const el=document.createElement('div'); el.className='global-win-overlay'; el.style.top=`${row*20}%`; el.style.left='0%'; el.style.width='100%'; el.style.height='20%'; miniGrid.appendChild(el); });
-    global.colWins.forEach(col => { const el=document.createElement('div'); el.className='global-win-overlay'; el.style.top='0%'; el.style.left=`${col*20}%`; el.style.width='20%'; el.style.height='100%'; miniGrid.appendChild(el); });
+    if (global.winningColumn !== null) {
+      const el = document.createElement('div');
+      el.className = 'global-win-overlay';
+      if (data.team === global.winnerTeam) el.classList.add('winner-line');
+      el.style.top = '0%'; el.style.left = `${global.winningColumn * 20}%`;
+      el.style.width = '20%'; el.style.height = '100%';
+      miniGrid.appendChild(el);
+    }
     container.appendChild(cardDiv);
   });
 }
@@ -341,8 +361,10 @@ function openPreview(teamName) {
   document.querySelectorAll('#previewGrid .win-overlay, #previewGrid .global-win-overlay').forEach(el => el.remove());
  
   const global = getGlobalWins();
-  global.rowWins.forEach(r => createWinOverlay(previewGrid, 'row', r, 'global-win-overlay'));
-  global.colWins.forEach(c => createWinOverlay(previewGrid, 'col', c, 'global-win-overlay'));
+  if (global.winningColumn !== null) {
+    const lineClass = data.team === global.winnerTeam ? 'global-win-overlay winner-line' : 'global-win-overlay';
+    createWinOverlay(previewGrid, 'col', global.winningColumn, lineClass);
+  }
  
   document.getElementById('previewModal').classList.add('active');
 }
@@ -391,7 +413,23 @@ async function saveCard(){
   if(!team) return alert('Voer een teamnaam in');
   const checked=[];
   document.querySelectorAll('#grid .cell').forEach((c,i)=>{if(c.classList.contains('checked')) checked.push(i);});
-  const {error}=await supabaseClient.from('bingo_cards').upsert({team,checked},{onConflict:'team'});
+  // Bewaar de eerste geldige verticale lijn van dit team. Latere wijzigingen overschrijven de winsttijd niet.
+  const existing = getCard(team);
+  let line_completed_at = existing?.line_completed_at || null;
+  let winning_column = Number.isInteger(existing?.winning_column) ? existing.winning_column : null;
+  if (!line_completed_at || !Number.isInteger(winning_column)) {
+    for (let col = 0; col < 5; col++) {
+      if (hasVerticalLine(checked, col)) {
+        line_completed_at = new Date().toISOString();
+        winning_column = col;
+        break;
+      }
+    }
+  }
+  const {error}=await supabaseClient.from('bingo_cards').upsert(
+    {team, checked, line_completed_at, winning_column},
+    {onConflict:'team'}
+  );
   if(error){console.error(error);alert('Kaart opslaan mislukt. Controleer de Supabase-tabel en toegangsregels.');return;}
   await refreshCards(); alert('Kaart opgeslagen!'); await loadSavedCards(); await loadPublicCards();
 }
