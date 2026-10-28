@@ -113,6 +113,11 @@ input{padding:10px;border-radius:8px;border:none;background:rgba(34, 34, 34, 0.9
   z-index: 6;
   border-radius: 8px;
 }
+/* De eerste kaart met een complete verticale kolom krijgt groen; dezelfde kolom blijft rood op andere kaarten. */
+.global-win-overlay.winner-line {
+  background: rgba(0, 255, 80, 0.35);
+  box-shadow: 0 0 30px rgba(0, 255, 80, 0.8);
+}
 </style>
 </head>
 <body>
@@ -413,7 +418,8 @@ async function saveCard(){
   if(!team) return alert('Voer een teamnaam in');
   const checked=[];
   document.querySelectorAll('#grid .cell').forEach((c,i)=>{if(c.classList.contains('checked')) checked.push(i);});
-  // Bewaar de eerste geldige verticale lijn van dit team. Latere wijzigingen overschrijven de winsttijd niet.
+  // Registreer alleen verticale kolommen (boven-naar-beneden of onder-naar-boven is dezelfde kolom).
+  // De eerste opgeslagen complete kolom bepaalt de winnaar; latere kaarten kunnen die niet vervangen.
   const existing = getCard(team);
   let line_completed_at = existing?.line_completed_at || null;
   let winning_column = Number.isInteger(existing?.winning_column) ? existing.winning_column : null;
