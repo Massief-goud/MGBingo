@@ -258,6 +258,39 @@ function hasVerticalLine(checkedIndices, column) {
   const checked = new Set(checkedIndices || []);
   return [0, 1, 2, 3, 4].every(row => checked.has(row * 5 + column));
 }
+async function clearColumnCompletions(columns) {
+  const cols = [...new Set(columns.map(Number).filter(c => Number.isInteger(c) && c >= 0 && c <= 4))];
+  if (!cols.length) return true;
+  // Verwijder de winnaarregistratie voor deze kolommen bij ALLE kaarten,
+  // zodat zowel groene als rode stroken verdwijnen en er niet automatisch
+  // een oude rode kaart alsnog winnaar wordt.
+  for (const card of bingoCards) {
+    const completions = { ...(card.line_completions || {}) };
+    let changed = false;
+    for (const col of cols) {
+      if (Object.prototype.hasOwnProperty.call(completions, col)) {
+        delete completions[col];
+        changed = true;
+      }
+    }
+    const legacyInvalid = cols.includes(card.winning_column);
+    if (changed || legacyInvalid) {
+      const update = { line_completions: completions };
+      if (legacyInvalid) {
+        update.line_completed_at = null;
+        update.winning_column = null;
+      }
+      const { error } = await supabaseClient.from('bingo_cards').update(update).eq('team', card.team);
+      if (error) {
+        console.error('Winnaarregistratie opschonen mislukt:', error);
+        alert('De stroken konden niet volledig worden bijgewerkt. Controleer de Supabase-toegangsregels.');
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 function getGlobalWins() {
   const winnersByColumn = {};
   bingoCards.forEach(card => {
@@ -429,9 +462,24 @@ async function saveCard(){
   if(!team) return alert('Voer een teamnaam in');
   const checked=[];
   document.querySelectorAll('#grid .cell').forEach((c,i)=>{if(c.classList.contains('checked')) checked.push(i);});
-  // Elke unieke verticale kolom krijgt een eigen eerste winnaar. Bestaande tijdstempels blijven behouden.
+  // Als deze kaart een eerder gewonnen kolom niet meer compleet heeft,
+  // verwijder dan de stroken voor die kolom op ALLE kaarten.
+  const previousWinners = getGlobalWins().winnersByColumn;
+  const invalidatedColumns = Object.entries(previousWinners)
+    .filter(([colText, winner]) => winner.team === team && !hasVerticalLine(checked, Number(colText)))
+    .map(([colText]) => Number(colText));
+  if (invalidatedColumns.length) {
+    if (!(await clearColumnCompletions(invalidatedColumns))) return;
+    await refreshCards();
+  }
+
+  // Elke unieke verticale kolom krijgt een eigen eerste winnaar.
   const existing = getCard(team);
   const line_completions = { ...(existing?.line_completions || {}) };
+  // Ruim ook eventuele verouderde registraties op voor kolommen die deze kaart niet meer compleet heeft.
+  for (let col = 0; col < 5; col++) {
+    if (!hasVerticalLine(checked, col)) delete line_completions[col];
+  }
   if (existing?.line_completed_at && Number.isInteger(existing?.winning_column) && !line_completions[existing.winning_column]) {
     line_completions[existing.winning_column] = existing.line_completed_at;
   }
@@ -486,6 +534,13 @@ function editCard(team){
 async function deleteCard(team){
   if(!unlockEdit()) return;
   if(confirm('Kaart verwijderen?')){
+    // Als deze kaart een of meer kolommen heeft gewonnen, verwijder dan eerst
+    // de groene én rode stroken voor die kolommen op alle kaarten.
+    const winners = getGlobalWins().winnersByColumn;
+    const wonColumns = Object.entries(winners)
+      .filter(([, winner]) => winner.team === team)
+      .map(([colText]) => Number(colText));
+    if (wonColumns.length && !(await clearColumnCompletions(wonColumns))) return;
     const {error}=await supabaseClient.from('bingo_cards').delete().eq('team',team);
     if(error){console.error(error);alert('Kaart verwijderen mislukt. Controleer de Supabase-toegangsregels.');return;}
     await refreshCards(); await loadSavedCards(); await loadPublicCards();
